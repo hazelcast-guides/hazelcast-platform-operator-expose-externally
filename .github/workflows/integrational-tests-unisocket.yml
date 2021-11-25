@@ -12,7 +12,7 @@ jobs:
   create-gke-with-operator:
     uses: hazelcast-guides/hazelcast-platform-operator-expose-externally/.github/workflows/create-gke-with-operator.yaml@CN-233-operator-expose-externally
     with:
-      cluster_name: repoName="$(echo $GITHUB_REPOSITORY | awk -F/ '{print $NF}')-$GITHUB_RUN_NUMBER"
+      cluster_name: "$(echo $GITHUB_REPOSITORY | awk -F/ '{print $NF}')-$GITHUB_RUN_NUMBER"
     secrets:
       project_id: ${{secrets.GKE_PROJECT}}
 
