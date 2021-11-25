@@ -10,6 +10,9 @@ env:
   HAZELCAST_VERSION: 5.0
 
 jobs:
+  create-gke-with-operator:
+    uses: hazelcast-guides/hazelcast-platform-operator-expose-externally/.github/workflows/create-gke-with-operator.yaml@CN-233-operator-expose-externally
+
   run-tests:
     name: Run Intergrational tests on GKE
     runs-on: ubuntu-latest
@@ -45,25 +48,6 @@ jobs:
         python-version: 3.9
         cache: 'pip'
         cache-dependency-path: '**/requirements-dev.txt'
-
-    # Setup gcloud CLI
-    - uses: GoogleCloudPlatform/github-actions/setup-gcloud@v0.2.1
-      with:
-        service_account_key: ${{ secrets.GKE_SA_KEY }}
-        project_id: ${{ env.PROJECT_ID }}
-        export_default_credentials: true
-
-    - name: Install Kubectl
-      run: |-
-        gcloud components install kubectl
-
-    - name: Create GKE cluster
-      run: |-
-        repoName=$(echo $GITHUB_REPOSITORY | awk -F/ '{print $NF}')
-        clusterName="$repoName-$GITHUB_RUN_NUMBER"
-        echo "clusterName=$clusterName" >> $GITHUB_ENV
-        gcloud container clusters create "$clusterName" --zone="$GKE_ZONE" --project="$PROJECT_ID" --machine-type=n1-standard-2 --num-nodes=2
-        sleep 30
 
     - name: Deploy Hazelcast Platform Operator
       run: |-
