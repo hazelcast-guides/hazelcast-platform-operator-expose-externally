@@ -13,7 +13,7 @@ jobs:
   run-tests:
     name: Run Intergrational tests on GKE
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # continue-on-error: true
 
     outputs:
       master_ip: ${{ steps.master-ip.outputs.ip }}
