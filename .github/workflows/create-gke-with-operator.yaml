@@ -1,0 +1,38 @@
+name: Create GKE cluster with deployed Hazelcast Platform Operator
+
+on:
+  workflow_call:
+    secrets:
+      project_id:
+        required: true
+
+jobs:
+  create-cluster:
+    name: Create GKE and deploy the operator
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+    # Setup gcloud CLI
+    - uses: GoogleCloudPlatform/github-actions/setup-gcloud@v0.2.1
+      with:
+        service_account_key: ${{ secrets.GKE_SA_KEY }}
+        project_id: ${{ env.PROJECT_ID }}
+        export_default_credentials: true 
+
+    - name: Install Kubectl
+      run: |-
+        gcloud components install kubectl
+
+    - name: Create GKE cluster
+      run: |-
+        repoName=$(echo $GITHUB_REPOSITORY | awk -F/ '{print $NF}')
+        clusterName="$repoName-$GITHUB_RUN_NUMBER"
+        echo "clusterName=$clusterName" >> $GITHUB_ENV
+        gcloud container clusters create "$clusterName" --zone="$GKE_ZONE" --project="$PROJECT_ID" --machine-type=n1-standard-2 --num-nodes=2
+        sleep 30
+
+    - name: Deploy Hazelcast Platform Operator
+      run: |-
+        kubectl apply -f https://repository.hazelcast.com/operator/bundle.yaml
+        kubectl wait --for=condition=available --timeout=600s deployment/hazelcast-platform-controller-manager

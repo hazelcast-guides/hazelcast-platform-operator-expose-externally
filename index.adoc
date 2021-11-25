@@ -228,6 +228,15 @@ Current map size: 9
 Current map size: 10
 ----
 
+==== Clean Up
+
+To delete clean up the created resources remove the Hazelcast Custom Resource.
+
+[source, shell]
+----
+kubectl delete hazelcast my-hazelcast
+----
+
 == Smart Client
 
 The second option is to use the `Smart` type. With it each Hazelcast member will be exposed with its own service (it can be either `LoadBalancer` or `NodePort`). Hazelcast smart client is capable of mapping the given key with its owner member, which means that it sends the data directly to the member which contains the right data partition.
@@ -254,10 +263,7 @@ spec:
 EOF
 ----
 
-This will create the Hazelcast cluster and one `LoadBalancer` services for discovery and one `LoadBalancer` services for each pod.
-
-It also is possible to use `NodePort` type for `discoveryServiceType`. It will create the service of type `NodePort` for discovery.
-For `memberAccess` it is also possible to use `NodePortExternalIP` that allows the client to access Hazelcast member with the `NodePort` service and the node external IP/hostname, or `NodePortNodeName` that allows the client to access Hazelcast member with the `NodePort` service and the node name.
+This will create the Hazelcast cluster and one `LoadBalancer` services for discovery and separate `LoadBalancer` services for each pod.
 
 === Verifying Hazelcast cluster
 
@@ -426,14 +432,9 @@ Current map size: 9
 Current map size: 10
 ----
 
-== Clean Up
+== Summary
 
-To clean up the created resources remove the Hazelcast Custom Resource.
-
-[source, shell]
-----
-kubectl delete hazelcast my-hazelcast
-----
+// Provide a quick summary
 
 == See Also
 
