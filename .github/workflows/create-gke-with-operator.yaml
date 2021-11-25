@@ -2,6 +2,10 @@ name: Create GKE cluster with deployed Hazelcast Platform Operator
 
 on:
   workflow_call:
+    with:
+      cluster_name:
+        required: true
+        type: string
     secrets:
       project_id:
         required: true
@@ -10,11 +14,15 @@ jobs:
   create-cluster:
     name: Create GKE and deploy the operator
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
+
+    - name: Test
+      run: |-
+        echo ${{ inputs.cluster_name }}
+        echo ${{ secrets.project_id }}
     # Setup gcloud CLI
-    - uses: GoogleCloudPlatform/github-actions/setup-gcloud@v0.2.1
+    - uses: google-github-actions/setup-gcloud@v0.2.1
       with:
         service_account_key: ${{ secrets.GKE_SA_KEY }}
         project_id: ${{ env.PROJECT_ID }}
