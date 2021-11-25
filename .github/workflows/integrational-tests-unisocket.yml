@@ -7,18 +7,13 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GKE_ZONE: europe-west1-b
-  HAZELCAST_VERSION: 4.2
+  HAZELCAST_VERSION: 5.0
 
 jobs:
   run-tests:
     name: Run Intergrational tests on GKE
     runs-on: ubuntu-latest
     # continue-on-error: true
-
-    outputs:
-      master_ip: ${{ steps.master-ip.outputs.ip }}
-      api_token: ${{ steps.secrets.outputs.apiToken }}
-      ca_certificate: ${{ steps.secrets.outputs.caCertificate }}
 
     steps:
     - name: Checkout
@@ -65,6 +60,7 @@ jobs:
         repoName=$(echo $GITHUB_REPOSITORY | awk -F/ '{print $NF}')
         clusterName="$repoName-$GITHUB_RUN_NUMBER"
         echo "clusterName=$clusterName" >> $GITHUB_ENV
+        echo "$clusterName"
         gcloud container clusters create "$clusterName" --zone="$GKE_ZONE" --project="$PROJECT_ID" --machine-type=n1-standard-2 --num-nodes=2
         sleep 30
 
