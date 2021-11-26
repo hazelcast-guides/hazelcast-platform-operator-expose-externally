@@ -7,22 +7,47 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GKE_ZONE: europe-west1-b
-  HAZELCAST_VERSION: 5.0
 
 jobs:
+  create-gke-cluster:
+    name: Create GKE cluster
+    runs-on: ubuntu-latest
+    outputs:
+      cluster_name: ${{ steps.cluster.outputs.cluster_name }}
+
+    steps:
+      # Setup gcloud CLI
+    - uses: google-github-actions/setup-gcloud@main
+      with:
+        service_account_key: ${{ secrets.GKE_SA_KEY }}
+        project_id: ${{ env.PROJECT_ID }}
+        export_default_credentials: true 
+
+    - name: Install Kubectl
+      run: |-
+        gcloud components install kubectl
+
+    - name: Create GKE cluster
+      id: cluster
+      run: |-
+        CLUSTER_NAME="operator-expose-externally-$GITHUB_RUN_NUMBER"
+        echo "::set-output name=cluster_name::${CLUSTER_NAME}"
+        gcloud container clusters create ${CLUSTER_NAME} --zone=${{ env.GKE_ZONE }} --project=${{ env.GCP_PROJECT_ID }} --network=${{ env.GCP_NETWORK }} --machine-type=n1-standard-2 --num-nodes=2
+        sleep 30
+
   run-tests:
     name: Run Intergrational tests on GKE
     runs-on: ubuntu-latest
+    needs: create-gke-cluster
     strategy:
       max-parallel: 1
       fail-fast: false
       matrix:
         include:
-          - type: Unisocket
+          - type: uisocket
             suffix: "-unisocket"
-          - type: Smart
+          - type: smart
             suffix: ""
-
 
     steps:
     - name: Checkout
@@ -65,51 +90,50 @@ jobs:
       run: |-
         gcloud components install kubectl
 
-    - name: Create GKE cluster
+    - name: Connect to the GKE cluster
+      run: gcloud container clusters get-credentials ${{ needs.create-gke-cluster.outputs.cluster_name }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
+
+    - name: Create namespace
       run: |-
-        clusterName="operator-expose-externally-$GITHUB_RUN_NUMBER"
-        echo "clusterName=$clusterName" >> $GITHUB_ENV
-        echo "$clusterName"
-        gcloud container clusters create "$clusterName" --zone="$GKE_ZONE" --project="$PROJECT_ID" --machine-type=n1-standard-2 --num-nodes=2 --no-enable-ip-alias
-        sleep 30
+        kubectl create namespace ${{ matrix.type }}
 
     - name: Deploy operator
       run: |-
-        kubectl apply -f https://repository.hazelcast.com/operator/bundle.yaml
-        kubectl wait --for=condition=available --timeout=600s deployment/hazelcast-platform-controller-manager
+        kubectl apply -n ${{ matrix.type }} -f https://repository.hazelcast.com/operator/bundle.yaml
+        kubectl wait -n ${{ matrix.type }} --for=condition=available --timeout=600s deployment/hazelcast-platform-controller-manager
 
     - name: Deploy Hazelcast cluster
       run: |-
-        kubectl create secret generic hazelcast-license-key --from-literal license-key=${{ secrets.LICENSE }}
-        kubectl apply -f hazelcast${{matrix.suffix}}.yaml
+        kubectl create -n ${{ matrix.type }} secret generic hazelcast-license-key --from-literal license-key=${{ secrets.LICENSE }}
+        kubectl apply -n ${{ matrix.type }} -f hazelcast${{matrix.suffix}}.yaml
         sleep 30
-        kubectl wait --for=condition=ready pod/my-hazelcast-0 --timeout=5m
-        kubectl wait --for=condition=ready pod/my-hazelcast-1 --timeout=150s
-        kubectl wait --for=condition=ready pod/my-hazelcast-2 --timeout=150s
+        kubectl wait -n ${{ matrix.type }} --for=condition=ready pod/my-hazelcast-0 --timeout=5m
+        kubectl wait -n ${{ matrix.type }} --for=condition=ready pod/my-hazelcast-1 --timeout=150s
+        kubectl wait -n ${{ matrix.type }} --for=condition=ready pod/my-hazelcast-2 --timeout=150s
         sleep 5
 
     - name: Wait for external IP to get assigned
       run: |-
-        serviceType=$(kubectl get svc my-hazelcast --output="jsonpath={.spec.type}")
+        serviceType=$(kubectl get svc -n ${{ matrix.type }} my-hazelcast --output="jsonpath={.spec.type}")
         if [ "$serviceType" != "LoadBalancer" ]; then
           exit 1
         fi
-        EXTERNAL_IP=$(kubectl get svc my-hazelcast --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
+        EXTERNAL_IP=$(kubectl get svc -n ${{ matrix.type }} my-hazelcast --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
         while [ "$EXTERNAL_IP" == "" ]; do
           sleep 10
-          EXTERNAL_IP=$(kubectl get svc my-hazelcast --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
+          EXTERNAL_IP=$(kubectl get svc -n ${{ matrix.type }} my-hazelcast --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
         done
 
         echo "EXTERNAL_IP=${EXTERNAL_IP}" >> $GITHUB_ENV
 
     - name: Wait for Smart type member IPs to get assigned
-      if: matrix.type == 'Smart'
+      if: matrix.type == 'smart'
       run: |-
         for i in {0..2} do
-          EXTERNAL_IP=$(kubectl get svc my-hazelcast-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
+          EXTERNAL_IP=$(kubectl get svc -n ${{ matrix.type }} my-hazelcast-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
           while [ "$EXTERNAL_IP" == "" ]; do
             sleep 10
-            EXTERNAL_IP=$(kubectl get svc my-hazelcast-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
+            EXTERNAL_IP=$(kubectl get svc -n ${{ matrix.type }} my-hazelcast-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
           done
         done
 
@@ -164,8 +188,19 @@ jobs:
 
         cat output-python.txt | grep 'Successful connection!' -q
 
+    - name: Clean up
+      if: ${{ always() }}
+      run: |-
+        kubectl delete ns ${{ matrix.type }}
+
+  clean-up:
+    name: Clean up GKE cluster
+    runs-on: ubuntu-latest
+    needs: [run-tests, create-gke-cluster]
+    if: ${{ always() }}
+    steps:
+
     # Clean up
     - name: Delete cluster
-      if: ${{ always() }}
       run: |-
         gcloud container clusters delete "$clusterName" --zone="$GKE_ZONE" --quiet
