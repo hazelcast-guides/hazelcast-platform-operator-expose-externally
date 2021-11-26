@@ -13,7 +13,11 @@ jobs:
   run-tests:
     name: Run Intergrational tests on GKE
     runs-on: ubuntu-latest
-    # continue-on-error: true
+    strategy:
+      matrix:
+        include:
+          - type: Unisocket
+            suffix: "-unisocket"
 
     steps:
     - name: Checkout
@@ -67,31 +71,23 @@ jobs:
       run: |-
         kubectl apply -f https://repository.hazelcast.com/operator/bundle.yaml
         kubectl wait --for=condition=available --timeout=600s deployment/hazelcast-platform-controller-manager
-        exit 1
 
     - name: Deploy Hazelcast cluster
       run: |-
         kubectl create secret generic hazelcast-license-key --from-literal license-key=${{ secrets.LICENSE }}
-        cat <<EOF | kubectl apply -f -
-        apiVersion: hazelcast.com/v1alpha1
-        kind: Hazelcast
-        metadata:
-          name: my-hazelcast
-        spec:
-          clusterSize: 3
-          repository: 'docker.io/hazelcast/hazelcast-enterprise'
-          version: '5.0-slim'
-          licenseKeySecret: hazelcast-license-key
-        EOF
+        kubectl apply -f hazelcast${{matrix.suffix}}.yaml
         sleep 30
         kubectl wait --for=condition=ready pod/my-hazelcast-0 --timeout=5m
         kubectl wait --for=condition=ready pod/my-hazelcast-1 --timeout=150s
         kubectl wait --for=condition=ready pod/my-hazelcast-2 --timeout=150s
         sleep 5
 
-
     - name: Wait for external IP to get assigned
       run: |-
+        serviceType=$(kubectl get svc my-hazelcast --output="jsonpath={.spec.type}")
+        if [ "$serviceType" != "LoadBalancer" ]; then
+          exit 1
+        fi
         EXTERNAL_IP=$(kubectl get svc my-hazelcast --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
         while [ "$EXTERNAL_IP" == "" ]; do
           sleep 10
@@ -103,7 +99,7 @@ jobs:
     - name: Test Java Client
       run: |-
         EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-        cd java
+        cd java${{matrix.suffix}}
         sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" src/main/java/com/hazelcast/Main.java
         mvn package
         java -jar target/*jar-with-dependencies*.jar >> output-java.txt &
@@ -116,7 +112,7 @@ jobs:
     - name: Test Node.js Client
       run: |-
         EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-        cd nodejs
+        cd nodejs${{matrix.suffix}}
         sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" client.js
         npm install
         npm start >> output-nodejs.txt &
@@ -129,7 +125,7 @@ jobs:
     - name: Test Go Client
       run: |-
         EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-        cd go
+        cd go${{matrix.suffix}}
         sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.go
         go run main.go >> output-go.txt &
         PID=$!
@@ -141,7 +137,7 @@ jobs:
     - name: Test Python Client
       run: |-
         EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-        cd python
+        cd python${{matrix.suffix}}
         sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.py
         pip install -r requirements.txt
         python main.py >> output-python.txt &
