@@ -35,6 +35,12 @@ jobs:
         gcloud container clusters create ${CLUSTER_NAME} --zone=${{ env.GKE_ZONE }} --project="${{ env.PROJECT_ID }}" --machine-type=n1-standard-2 --num-nodes=2 --no-enable-ip-alias
         sleep 30
 
+    - name: Deploy operator
+      run: |-
+        kubectl apply -f https://repository.hazelcast.com/operator/bundle.yaml
+        kubectl wait --for=condition=available --timeout=10m deployment/hazelcast-platform-controller-manager
+
+
   run-tests:
     name: Run Intergrational tests on GKE
     runs-on: ubuntu-latest
@@ -93,35 +99,26 @@ jobs:
     - name: Connect to the GKE cluster
       run: gcloud container clusters get-credentials ${{ needs.create-gke-cluster.outputs.cluster_name }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
 
-    - name: Create namespace
-      run: |-
-        kubectl create namespace ${{ matrix.type }}
-
-    - name: Deploy operator
-      run: |-
-        kubectl apply -n ${{ matrix.type }} -f https://repository.hazelcast.com/operator/bundle.yaml
-        kubectl wait -n ${{ matrix.type }} --for=condition=available --timeout=600s deployment/hazelcast-platform-controller-manager
-
     - name: Deploy Hazelcast cluster
       run: |-
-        kubectl create -n ${{ matrix.type }} secret generic hazelcast-license-key --from-literal license-key=${{ secrets.LICENSE }}
-        kubectl apply -n ${{ matrix.type }} -f hazelcast${{matrix.suffix}}.yaml
+        kubectl create secret generic hazelcast-license-key --from-literal license-key=${{ secrets.LICENSE }}
+        kubectl apply -f hazelcast${{matrix.suffix}}.yaml
         sleep 30
-        kubectl wait -n ${{ matrix.type }} --for=condition=ready pod/my-hazelcast-0 --timeout=5m
-        kubectl wait -n ${{ matrix.type }} --for=condition=ready pod/my-hazelcast-1 --timeout=150s
-        kubectl wait -n ${{ matrix.type }} --for=condition=ready pod/my-hazelcast-2 --timeout=150s
+        kubectl wait --for=condition=ready pod/my-hazelcast-0 --timeout=5m
+        kubectl wait --for=condition=ready pod/my-hazelcast-1 --timeout=150s
+        kubectl wait --for=condition=ready pod/my-hazelcast-2 --timeout=150s
         sleep 5
 
     - name: Wait for external IP to get assigned
       run: |-
-        serviceType=$(kubectl get svc -n ${{ matrix.type }} my-hazelcast --output="jsonpath={.spec.type}")
+        serviceType=$(kubectl get svc my-hazelcast --output="jsonpath={.spec.type}")
         if [ "$serviceType" != "LoadBalancer" ]; then
           exit 1
         fi
-        EXTERNAL_IP=$(kubectl get svc -n ${{ matrix.type }} my-hazelcast --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
+        EXTERNAL_IP=$(kubectl get svc my-hazelcast --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
         while [ "$EXTERNAL_IP" == "" ]; do
           sleep 10
-          EXTERNAL_IP=$(kubectl get svc -n ${{ matrix.type }} my-hazelcast --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
+          EXTERNAL_IP=$(kubectl get svc my-hazelcast --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
         done
 
         echo "EXTERNAL_IP=${EXTERNAL_IP}" >> $GITHUB_ENV
@@ -130,10 +127,10 @@ jobs:
       if: matrix.type == 'smart'
       run: |-
         for i in {0..2} do
-          EXTERNAL_IP=$(kubectl get svc -n ${{ matrix.type }} my-hazelcast-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
+          EXTERNAL_IP=$(kubectl get svc my-hazelcast-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
           while [ "$EXTERNAL_IP" == "" ]; do
             sleep 10
-            EXTERNAL_IP=$(kubectl get svc -n ${{ matrix.type }} my-hazelcast-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
+            EXTERNAL_IP=$(kubectl get svc my-hazelcast-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
           done
         done
 
@@ -191,7 +188,8 @@ jobs:
     - name: Clean up
       if: ${{ always() }}
       run: |-
-        kubectl delete ns ${{ matrix.type }}
+        kubectl delete hazelcast my-hazelcast
+        kubectl wait --for=delete pod/my-hazelcast-0 --timeout=2m
 
   clean-up:
     name: Clean up GKE cluster
