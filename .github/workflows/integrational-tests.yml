@@ -32,7 +32,7 @@ jobs:
       run: |-
         CLUSTER_NAME="operator-expose-externally-$GITHUB_RUN_NUMBER"
         echo "::set-output name=cluster_name::${CLUSTER_NAME}"
-        gcloud container clusters create ${CLUSTER_NAME} --zone=${{ env.GKE_ZONE }} --project="${{ env.PROJECT_ID }}" --machine-type=n1-standard-2 --num-nodes=2 --no-enable-ip-alias
+        gcloud container clusters create ${CLUSTER_NAME} --zone=${{ env.GKE_ZONE }} --project="${{ env.PROJECT_ID }}" --machine-type=n1-standard-2 --num-nodes=2 --network=${{ secrets.GKE_NETWORK }}
         sleep 30
 
     - name: Deploy operator
@@ -186,6 +186,7 @@ jobs:
         sleep 30
         kill $PID
 
+        file output-python.txt
         cat output-python.txt
         cat output-python.txt | grep 'Successful connection!' -q
 
