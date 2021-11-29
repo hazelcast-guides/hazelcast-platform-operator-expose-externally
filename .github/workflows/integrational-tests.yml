@@ -106,6 +106,7 @@ jobs:
         sleep 30
         kubectl get po
         kubectl get hazelcast -o yaml
+        kubectl get events
         kubectl wait --for=condition=ready pod/my-hazelcast-0 --timeout=5m
         kubectl wait --for=condition=ready pod/my-hazelcast-1 --timeout=150s
         kubectl wait --for=condition=ready pod/my-hazelcast-2 --timeout=150s
@@ -180,11 +181,14 @@ jobs:
         cd python${{matrix.suffix}}
         sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.py
         pip install -r requirements.txt
+        echo "1~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
         python main.py >> output-python.txt &
         PID=$!
         sleep 30
+        echo "2~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
         kill $PID
 
+        echo "3~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
         cat output-python.txt
         cat output-python.txt | grep 'Successful connection!' -q
 
