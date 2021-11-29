@@ -187,7 +187,6 @@ jobs:
         kill $PID
 
         file output-python.txt
-        cat output-python.txt
         cat output-python.txt | grep 'Successful connection!' -q
 
     - name: Clean up
