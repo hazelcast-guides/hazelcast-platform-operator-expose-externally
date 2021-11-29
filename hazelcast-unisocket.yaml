@@ -1,7 +1,7 @@
 apiVersion: hazelcast.com/v1alpha1
 kind: Hazelcast
 metadata:
-  name: my-hazelcast
+  name: my-hazelcast-unisocket
 spec:
   clusterSize: 3
   repository: 'docker.io/hazelcast/hazelcast-enterprise'
