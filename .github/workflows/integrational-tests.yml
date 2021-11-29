@@ -183,7 +183,7 @@ jobs:
         sleep 30
         kill $PID
 
-        cat output-python.txt | grep 'Successful connection!' -q
+        cat output-python.txt | grep 'is CONNECTED' -q
 
     - name: Clean up
       if: ${{ always() }}
