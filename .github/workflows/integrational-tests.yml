@@ -104,6 +104,8 @@ jobs:
       run: |-
         kubectl apply -f hazelcast${{matrix.suffix}}.yaml
         sleep 30
+        kubectl get po
+        kubectl get hazelcast -o yaml
         kubectl wait --for=condition=ready pod/my-hazelcast-0 --timeout=5m
         kubectl wait --for=condition=ready pod/my-hazelcast-1 --timeout=150s
         kubectl wait --for=condition=ready pod/my-hazelcast-2 --timeout=150s
