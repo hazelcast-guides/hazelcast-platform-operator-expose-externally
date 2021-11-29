@@ -39,6 +39,7 @@ jobs:
       run: |-
         kubectl apply -f https://repository.hazelcast.com/operator/bundle.yaml
         kubectl wait --for=condition=available --timeout=10m deployment/hazelcast-platform-controller-manager
+        kubectl create secret generic hazelcast-license-key --from-literal license-key=${{ secrets.LICENSE }}
 
 
   run-tests:
@@ -101,7 +102,6 @@ jobs:
 
     - name: Deploy Hazelcast cluster
       run: |-
-        kubectl create secret generic hazelcast-license-key --from-literal license-key=${{ secrets.LICENSE }}
         kubectl apply -f hazelcast${{matrix.suffix}}.yaml
         sleep 30
         kubectl wait --for=condition=ready pod/my-hazelcast-0 --timeout=5m
