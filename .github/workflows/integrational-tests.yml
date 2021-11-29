@@ -104,13 +104,6 @@ jobs:
       run: |-
         kubectl apply -f hazelcast${{matrix.suffix}}.yaml
         sleep 30
-        kubectl get po
-        kubectl get hazelcast -o yaml
-        kubectl get events
-        kubectl wait --for=condition=ready pod/my-hazelcast${{matrix.suffix}}-0 --timeout=5m
-        kubectl wait --for=condition=ready pod/my-hazelcast${{matrix.suffix}}-1 --timeout=150s
-        kubectl wait --for=condition=ready pod/my-hazelcast${{matrix.suffix}}-2 --timeout=150s
-        sleep 5
 
     - name: Wait for external IP to get assigned
       run: |-
@@ -136,6 +129,13 @@ jobs:
             EXTERNAL_IP=$(kubectl get svc my-hazelcast${{matrix.suffix}}-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
           done
         done
+    
+    - name: Wait for Hazelcast pods
+      run: |-
+        kubectl wait --for=condition=ready pod/my-hazelcast${{matrix.suffix}}-0 --timeout=5m
+        kubectl wait --for=condition=ready pod/my-hazelcast${{matrix.suffix}}-1 --timeout=150s
+        kubectl wait --for=condition=ready pod/my-hazelcast${{matrix.suffix}}-2 --timeout=150s
+        sleep 5
 
     - name: Test Java Client
       run: |-
