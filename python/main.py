@@ -6,7 +6,7 @@ import hazelcast
 logging.basicConfig(level=logging.INFO)
 
 client = hazelcast.HazelcastClient(
-    cluster_members=["34.140.211.115"],
+    cluster_members=["<EXTERNAL-IP>"],
     use_public_ip=True,
 )
 
