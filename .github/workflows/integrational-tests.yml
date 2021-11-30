@@ -123,10 +123,12 @@ jobs:
       if: matrix.type == 'smart'
       run: |-
         for i in {0..2} do
-          EXTERNAL_IP=$(kubectl get svc my-hazelcast${{matrix.suffix}}-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
-          while [ "$EXTERNAL_IP" == "" ]; do
+          SVC_NAME="my-hazelcast${{matrix.suffix}}-${i}"
+          echo "${SVC_NAME}"
+          SVC_EXTERNAL_IP=$(kubectl get svc "${SVC_NAME}" --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
+          while [ "$SVC_EXTERNAL_IP" == "" ]; do
             sleep 10
-            EXTERNAL_IP=$(kubectl get svc my-hazelcast${{matrix.suffix}}-${i} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
+            SVC_EXTERNAL_IP=$(kubectl get svc "${SVC_NAME}" --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
           done
         done
     
@@ -186,7 +188,6 @@ jobs:
         sleep 30
         kill $PID
 
-        file output-python.txt
         cat output-python.txt | grep 'Successful connection!' -q
 
     - name: Clean up
