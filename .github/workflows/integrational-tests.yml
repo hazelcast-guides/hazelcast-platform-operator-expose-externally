@@ -20,7 +20,7 @@ jobs:
     - id: 'auth'
       uses: 'google-github-actions/auth@v0.4.1'
       with:
-        credentials_json: '${{ secrets.GKE_SA_KEY }}'
+        credentials_json: ${{ secrets.GKE_SA_KEY }}
       
     - uses: google-github-actions/setup-gcloud@master
       with:
@@ -94,7 +94,7 @@ jobs:
     - id: 'auth'
       uses: 'google-github-actions/auth@v0.4.1'
       with:
-        credentials_json: '${{ secrets.GKE_SA_KEY }}'
+        credentials_json: ${{ secrets.GKE_SA_KEY }}
 
     - uses: google-github-actions/setup-gcloud@master
       with:
@@ -214,7 +214,7 @@ jobs:
     - id: 'auth'
       uses: 'google-github-actions/auth@v0.4.1'
       with:
-        credentials_json: '${{ secrets.GKE_SA_KEY }}'
+        credentials_json: ${{ secrets.GKE_SA_KEY }}
 
     - uses: google-github-actions/setup-gcloud@master
       with:
