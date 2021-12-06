@@ -123,9 +123,7 @@ jobs:
       if: matrix.type == 'smart'
       run: |-
         for i in {0..2}; do
-          echo "${i}"
           SVC_NAME="my-hazelcast${{matrix.suffix}}-${i}"
-          echo "my-hazelcast${{matrix.suffix}}-${i}"
           SVC_EXTERNAL_IP=$(kubectl get svc "${SVC_NAME}" --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
           while [ "$SVC_EXTERNAL_IP" == "" ]; do
             sleep 10
