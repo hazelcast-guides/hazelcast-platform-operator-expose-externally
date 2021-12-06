@@ -16,10 +16,14 @@ jobs:
       cluster_name: ${{ steps.cluster.outputs.cluster_name }}
 
     steps:
-      # Setup gcloud CLI
+    # Setup gcloud CLI
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0.4.1'
+      with:
+        credentials_json: '${{ secrets.GKE_SA_KEY }}'
+      
     - uses: google-github-actions/setup-gcloud@master
       with:
-        service_account_key: ${{ secrets.GKE_SA_KEY }}
         project_id: ${{ env.PROJECT_ID }}
         export_default_credentials: true 
 
@@ -87,9 +91,13 @@ jobs:
         cache: 'pip'
 
     # Setup gcloud CLI
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0.4.1'
+      with:
+        credentials_json: '${{ secrets.GKE_SA_KEY }}'
+
     - uses: google-github-actions/setup-gcloud@master
       with:
-        service_account_key: ${{ secrets.GKE_SA_KEY }}
         project_id: ${{ env.PROJECT_ID }}
         export_default_credentials: true 
 
@@ -203,11 +211,15 @@ jobs:
     steps:
 
     # Setup gcloud CLI
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0.4.1'
+      with:
+        credentials_json: '${{ secrets.GKE_SA_KEY }}'
+
     - uses: google-github-actions/setup-gcloud@master
       with:
-        service_account_key: ${{ secrets.GKE_SA_KEY }}
         project_id: ${{ env.PROJECT_ID }}
-        export_default_credentials: true 
+        export_default_credentials: true
 
     # Clean up
     - name: Delete cluster
