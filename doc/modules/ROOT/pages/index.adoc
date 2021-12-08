@@ -5,13 +5,13 @@
 
 = Connect to Hazelcast from Outside Kubernetes
 
-This guide will explain how to use Expose Extarnally feature of Hazelcast Platform Operator to connect to the Hazelcast cluster running on Kubernetes from Outside.
+This guide will explain how to use Expose Externally feature of Hazelcast Platform Operator to connect to Hazelcast clusters running on Kubernetes from outside.
 
 include::{templates-url}/link-to-repo.adoc[]
 
 == What You’ll Learn
 
-In this guide, you will learn how to enable and use Expose Extarnally feature of Hazelcast Platform Operator.
+In this guide, you will learn how to enable and use Expose Externally feature of Hazelcast Platform Operator.
 
 == Prerequisites
 
@@ -21,7 +21,7 @@ In this guide, you will learn how to enable and use Expose Extarnally feature of
 
 == Introduction
 
-There are two available options for Expose Extarnally feature of Hazelcast Platform Operator:
+There are two available options for Expose Externally feature of Hazelcast Platform Operator:
 
 - *Unisocket* - client requests are load balanced between Hazelcast members.
 
@@ -31,14 +31,14 @@ Let’s see both approaches.
 
 == Unisocket
 
-The first option is to use the `Unisocket` type. This will use standard Kubernetes mechanism, that will automatically load balance the traffic to Hazelcast members.
+The first option is to use the `Unisocket` type. This option will use the standard Kubernetes mechanism that automatically load balances the traffic to Hazelcast members.
 
 .Hazelcast Unisocket Client
 image::unisocket.jpg[Hazelcast Unisocket Client]
 
 === Starting Hazelcast cluster
 
-Run the following command to create the Hazelcast cluster with Expose Externally feature enabled and Unisocket type.
+Run the following command to create the Hazelcast cluster with Expose Externally feature enabled using Unisocket type.
 
 [source, shell]
 ----
@@ -54,7 +54,7 @@ spec:
 EOF
 ----
 
-This will create the Hazelcast cluster and one `LoadBalancer` services. You can also use `NodePort` service, for this change the `discoveryServiceType` to `NodePort`.
+This will create the Hazelcast cluster and one `LoadBalancer` service. You can also use `NodePort` service, for this change the `discoveryServiceType` to `NodePort`.
 
 === Verifying Hazelcast cluster
 
@@ -67,7 +67,7 @@ NAME        STATUS    MEMBERS
 hazelcast   Running   3/3
 ----
 
-After verifying that the cluster is `Running` and all the members are ready (`3/3`) run the following command to find the discovery service address.
+After verifying that the cluster is `Running` and all the members are ready (`3/3`), run the following command to find the discovery service address.
 
 [source, shell]
 ----
@@ -230,14 +230,14 @@ Current map size: 10
 
 == Smart Client
 
-The second option is to use the `Smart` type. With it each Hazelcast member will be exposed with its own service (it can be either `LoadBalancer` or `NodePort`). Hazelcast smart client is capable of mapping the given key with its owner member, which means that it sends the data directly to the member which contains the right data partition.
+The second option is to use the `Smart` type. With this option, each Hazelcast member will be exposed with its own service (it can be either `LoadBalancer` or `NodePort`). Hazelcast smart client is capable of mapping the given key with its owner member, which means that it sends the data directly to the member which contains the right data partition.
 
 .Hazelcast Smart Client
 image::smart.jpg[Hazelcast Smart Client]
 
 === Starting Hazelcast cluster
 
-Run the following command to create the Hazelcast cluster with Expose Externally feature enabled and Smart type.
+Run the following command to create the Hazelcast cluster with Expose Externally feature enabled using Smart type.
 
 [source, shell]
 ----
@@ -254,9 +254,9 @@ spec:
 EOF
 ----
 
-This will create the Hazelcast cluster and one `LoadBalancer` services for discovery and one `LoadBalancer` services for each pod.
+This will create the Hazelcast cluster and one `LoadBalancer` service for discovery and one `LoadBalancer` service for each pod.
 
-It also is possible to use `NodePort` type for `discoveryServiceType`. It will create the service of type `NodePort` for discovery.
+It is also possible to use `NodePort` type for `discoveryServiceType`. Operator will create the service of type `NodePort` for discovery.
 For `memberAccess` it is also possible to use `NodePortExternalIP` that allows the client to access Hazelcast member with the `NodePort` service and the node external IP/hostname, or `NodePortNodeName` that allows the client to access Hazelcast member with the `NodePort` service and the node name.
 
 === Verifying Hazelcast cluster
@@ -270,7 +270,7 @@ NAME        STATUS    MEMBERS
 hazelcast   Running   3/3
 ----
 
-After verifying that the cluster is `Running` and all the members are ready (`3/3`) run the following command to find the discovery service address.
+After verifying that the cluster is `Running` and all the members are ready (`3/3`), run the following command to find the discovery service address.
 
 [source, shell]
 ----
