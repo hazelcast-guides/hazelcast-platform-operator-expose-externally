@@ -43,7 +43,7 @@ jobs:
 
 
   run-tests:
-    name: Run Intergrational tests on GKE
+    name: Run Integration tests on GKE
     runs-on: ubuntu-latest
     needs: create-gke-cluster
     strategy:
@@ -53,7 +53,7 @@ jobs:
         include:
           - type: smart
             suffix: ""
-          - type: uisocket
+          - type: unisocket
             suffix: "-unisocket"
 
     steps:
