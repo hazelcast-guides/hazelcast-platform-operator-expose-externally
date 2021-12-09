@@ -75,7 +75,7 @@ After verifying that the cluster is `Running` and all the members are ready (`3/
 
 [source, shell]
 ----
-$ kubectl get servive my-hazelcast
+$ kubectl get service my-hazelcast
 NAME           TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)          AGE
 my-hazelcast   LoadBalancer   10.43.240.23   35.240.113.74   5701:30218/TCP   65s
 
@@ -286,7 +286,7 @@ After verifying that the cluster is `Running` and all the members are ready (`3/
 
 [source, shell]
 ----
-$ kubectl get servive my-hazelcast
+$ kubectl get service my-hazelcast
 NAME           TYPE           CLUSTER-IP       EXTERNAL-IP       PORT(S)          AGE
 hz-hazelcast   LoadBalancer   10.108.141.178   10.96.184.178     5701:31434/TCP   5m44s
 ----
