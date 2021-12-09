@@ -9,4 +9,4 @@ target/
 *.iml
 *.ipr
 *.iws
-*.txt
+*node_modules/

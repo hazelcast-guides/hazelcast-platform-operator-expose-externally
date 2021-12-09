@@ -1,46 +1,453 @@
-////
-This is the base template for Hazelcast integration module guides.
+:github-address: https://github.com/hazelcast-guides/hazelcast-platform-operator-expose-externally
+:templates-url: templates:ROOT:page$/
+:hazelcast: Hazelcast IMDG
+:framework: Kubernetes Operator
 
-You can clone this repository, work on it and create your guide, and then push to a new repository.
-////
+= Connect to Hazelcast from Outside Kubernetes
 
-:github-address: [github-repo-address-of-your-guide]
-
-:templates-url: https://raw.githubusercontent.com/hazelcast-guides/adoc-templates/master
-
-// Use this relative url if you are going to publish the guide on the guides site.
-// Note that this url will not work locally and raise asciidoctor errors.
-// So, complete the guide with the above url and set the below one just before 
-// publishing on the guides site.
-//
-// :templates-url: templates:ROOT:page$/
-
-= Title
-
-// Content entered directly below the header but before the first section heading is called the preamble.
+This guide will explain how to use Expose Externally feature of Hazelcast Platform Operator to connect to Hazelcast clusters running on Kubernetes from outside.
 
 include::{templates-url}/link-to-repo.adoc[]
 
 == What You’ll Learn
 
-// Define the problem and tell reader what he/she will learn from this guide.
+In this guide, you will learn how to enable and use Expose Externally feature of Hazelcast Platform Operator.
 
 == Prerequisites
 
-// Define the prerequisites for the guide.
+* Up and running https://kubernetes.io/[Kubernetes] cluster
+* Kubernetes command-line tool, https://kubernetes.io/docs/tasks/tools/#kubectl[kubectl]
+* Deployed xref:hazelcast-platform-operator:ROOT:index.adoc[Hazelcast Platform Operator]
 
-////
-Write the steps in your guide here by making each step a different section
-////
+== Introduction
 
-== Summary
+There are two available options for Expose Externally feature of Hazelcast Platform Operator:
 
-// Provide a quick summary
+- *Unisocket* - client requests are load balanced between Hazelcast members.
+
+- *Smart* - client connects to all members and sends requests directly to the members owning the data.
+
+Let’s see both approaches.
+
+== Unisocket
+
+The first option is to use the `Unisocket` type. This option will use the standard Kubernetes mechanism that automatically load balances the traffic to Hazelcast members.
+
+.Hazelcast Unisocket Client
+image::unisocket.jpg[Hazelcast Unisocket Client]
+
+=== Starting Hazelcast cluster
+
+Run the following command to create the Hazelcast cluster with Expose Externally feature enabled using Unisocket type.
+
+[source, shell]
+----
+cat <<EOF | kubectl apply -f -
+apiVersion: hazelcast.com/v1alpha1
+kind: Hazelcast
+metadata:
+  name: my-hazelcast
+spec:
+  exposeExternally:
+    type: Unisocket
+    discoveryServiceType: LoadBalancer
+EOF
+----
+
+For `discoveryServiceType` you can use:
+
+* `LoadBalancer` - will create an external `LoadBalancer` for discovery serivce;
+* `NodePort` - will expose the discovery service via `NodePort`.
+
+
+=== Verifying Hazelcast cluster
+
+Check the cluster status by running the following command.
+
+[source, shell]
+----
+$ kubectl get hazelcast my-hazelcast
+NAME        STATUS    MEMBERS
+hazelcast   Running   3/3
+----
+
+After verifying that the cluster is `Running` and all the members are ready (`3/3`), run the following command to find the discovery service address.
+
+[source, shell]
+----
+$ kubectl get service my-hazelcast
+NAME           TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)          AGE
+my-hazelcast   LoadBalancer   10.43.240.23   35.240.113.74   5701:30218/TCP   65s
+
+----
+
+The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
+
+=== Connecting with Hazelcast Client
+
+Configure the Hazelcast client with the external address and disable smart routing to use the unisocket connection.
+
+[tabs]
+====
+
+Java::
++
+--
+[source, java]
+----
+ClientConfig config = new ClientConfig();
+config.getNetworkConfig().addAddress("<EXTERNAL-IP>")
+                         .setSmartRouting(false);
+----
+--
+
+NodeJS::
++
+--
+[source, javascript]
+----
+const { Client } = require('hazelcast-client');
+
+const clientConfig = {
+    network: {
+        clusterMembers: [
+            '<EXTERNAL-IP>'
+        ],
+        smartRouting: false
+    }
+};
+const client = await Client.newHazelcastClient(clientConfig);
+----
+--
+
+Go::
++
+--
+[source, go]
+----
+import (
+	"log"
+
+	"github.com/hazelcast/hazelcast-go-client"
+)
+
+func main() {
+	config := hazelcast.Config{}
+	cc := &config.Cluster
+	cc.Network.SetAddresses("<EXTERNAL-IP>")
+	cc.Unisocket = true
+	ctx := context.TODO()
+	client, err := hazelcast.StartNewClientWithConfig(ctx, config)
+	if err != nil {
+		panic(err)
+	}
+}
+----
+--
+
+Python::
++
+--
+[source, python]
+----
+import logging
+import hazelcast
+
+logging.basicConfig(level=logging.INFO)
+
+client = hazelcast.HazelcastClient(
+    cluster_members=["<EXTERNAL-IP>"],
+    use_public_ip=True,
+    smart_routing=False,
+)
+----
+--
+
+====
+
+Now you can start the application.
+
+[tabs]
+====
+
+Java::
++
+--
+[source, bash]
+----
+cd java-unisocket
+mvn package 
+java -jar target/*jar-with-dependencies*.jar
+----
+--
+
+NodeJS::
++
+--
+[source, bash]
+----
+cd nodejs-unisocket
+npm install
+npm start
+----
+--
+
+Go::
++
+--
+[source, bash]
+----
+cd go-unisocket
+go run main.go
+----
+--
+
+Python::
++
+--
+[source, bash]
+----
+cd python-unisocket
+pip install -r requirements.txt
+python main.py
+----
+--
+
+====
+
+You should see the following output.
+
+[source, shell]
+----
+Successful connection!
+Starting to fill the map with random entries.
+Current map size: 2
+Current map size: 3
+Current map size: 4
+Current map size: 5
+Current map size: 6
+Current map size: 7
+Current map size: 8
+Current map size: 9
+Current map size: 10
+----
+
+== Smart Client
+
+The second option is to use the `Smart` type. With this option, each Hazelcast member will be exposed with its own service (it can be either `LoadBalancer` or `NodePort`). Hazelcast smart client is capable of mapping the given key with its owner member, which means that it sends the data directly to the member which contains the right data partition.
+
+.Hazelcast Smart Client
+image::smart.jpg[Hazelcast Smart Client]
+
+=== Starting Hazelcast cluster
+
+Run the following command to create the Hazelcast cluster with Expose Externally feature enabled using Smart type.
+
+[source, shell]
+----
+cat <<EOF | kubectl apply -f -
+apiVersion: hazelcast.com/v1alpha1
+kind: Hazelcast
+metadata:
+  name: my-hazelcast
+spec:
+  exposeExternally:
+    type: Smart
+    discoveryServiceType: LoadBalancer
+    memberAccess: LoadBalancer
+EOF
+----
+
+This will create the Hazelcast cluster and one `LoadBalancer` service for discovery and one `LoadBalancer` service for each pod.
+
+For `discoveryServiceType` you can use:
+
+* `LoadBalancer` - will create an external `LoadBalancer` for discovery serivce;
+* `NodePort` - will expose the discovery service via `NodePort`.
+
+For `memberAccess` you can use the following options:
+
+* `LoadBalancer` - lets the client access Hazelcast member with the `LoadBalancer` service;
+* `NodePortNodeName` - lets the client access Hazelcast member with the `NodePort` service and the node name;
+* `NodePortExternalIP` - lets the client access Hazelcast member with the `NodePort` service and the node external IP/hostname.
+
+=== Verifying Hazelcast cluster
+
+Check the cluster status by running the following command.
+
+[source, shell]
+----
+$ kubectl get hazelcast my-hazelcast
+NAME        STATUS    MEMBERS
+hazelcast   Running   3/3
+----
+
+After verifying that the cluster is `Running` and all the members are ready (`3/3`), run the following command to find the discovery service address.
+
+[source, shell]
+----
+$ kubectl get service my-hazelcast
+NAME           TYPE           CLUSTER-IP       EXTERNAL-IP       PORT(S)          AGE
+hz-hazelcast   LoadBalancer   10.108.141.178   10.96.184.178     5701:31434/TCP   5m44s
+----
+
+The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
+
+=== Connecting with Hazelcast Client
+
+Configure the Hazelcast client to connect to the cluster external address.
+
+[tabs]
+====
+
+Java::
++
+--
+[source, java]
+----
+ClientConfig config = new ClientConfig();
+config.getNetworkConfig().addAddress("<EXTERNAL-IP>");
+----
+--
+
+NodeJS::
++
+--
+[source, javascript]
+----
+const { Client } = require('hazelcast-client');
+
+const clientConfig = {
+    network: {
+        clusterMembers: [
+            '<EXTERNAL-IP>'
+        ]
+    }
+};
+const client = await Client.newHazelcastClient(clientConfig);
+----
+--
+
+Go::
++
+--
+[source, go]
+----
+import (
+	"log"
+
+	"github.com/hazelcast/hazelcast-go-client"
+)
+
+func main() {
+	config := hazelcast.Config{}
+	cc := &config.Cluster
+	cc.Network.SetAddresses("<EXTERNAL-IP>")
+	ctx := context.TODO()
+	client, err := hazelcast.StartNewClientWithConfig(ctx, config)
+	if err != nil {
+		panic(err)
+	}
+}
+----
+--
+
+Python::
++
+--
+[source, python]
+----
+import logging
+import hazelcast
+
+logging.basicConfig(level=logging.INFO)
+
+client = hazelcast.HazelcastClient(
+    cluster_members=["<EXTERNAL-IP>"],
+    use_public_ip=True,
+)
+----
+--
+
+====
+
+Now you can start the application.
+
+[tabs]
+====
+
+Java::
++
+--
+[source, bash]
+----
+cd java
+mvn package 
+java -jar target/*jar-with-dependencies*.jar
+----
+--
+
+NodeJS::
++
+--
+[source, bash]
+----
+cd nodejs
+npm install
+npm start
+----
+--
+
+Go::
++
+--
+[source, bash]
+----
+cd go
+go run main.go
+----
+--
+
+Python::
++
+--
+[source, bash]
+----
+cd python
+pip install -r requirements.txt
+python main.py
+----
+--
+
+====
+
+You should see the following output.
+
+[source, shell]
+----
+Successful connection!
+Starting to fill the map with random entries.
+Current map size: 2
+Current map size: 3
+Current map size: 4
+Current map size: 5
+Current map size: 6
+Current map size: 7
+Current map size: 8
+Current map size: 9
+Current map size: 10
+----
+
+== Clean Up
+
+To clean up the created resources remove the Hazelcast Custom Resource.
+
+[source, shell]
+----
+kubectl delete hazelcast my-hazelcast
+----
 
 == See Also
 
-// Add some links to resources, such as other related guides.
-// Use relative links used on the home page (see https://raw.githubusercontent.com/hazelcast-guides/guides-site/master/home/modules/ROOT/pages/index.adoc)
-
-- xref:hazelcast-embedded-springboot:ROOT:index.adoc[Hazelcast in SpringBoot]
-- xref:hazelcast-quarkus:ROOT:index.adoc[Hazelcast Client for Quarkus] 
+- xref:hazelcast-platform-operator:ROOT:index.adoc[Connect External Hazelcast Client to Kubernetes]
+- xref:kubernetes-external-client:ROOT:index.adoc[Getting Started with Hazelcast Platform Operator]
