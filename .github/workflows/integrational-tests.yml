@@ -195,6 +195,14 @@ jobs:
       run: |-
         kubectl delete hazelcast my-hazelcast${{matrix.suffix}}
         kubectl wait --for=delete pod/my-hazelcast${{matrix.suffix}}-0 --timeout=2m
+        kubectl get svc my-hazelcast${{matrix.suffix}} || exit 0
+        kubectl wait --for=delete svc/my-hazelcast${{matrix.suffix}} --timeout=5m
+    
+    - name: Clean up Smart services
+      if: ${{ always() && matrix.type == 'smart' }}
+      run: |-
+        kubectl get svc my-hazelcast${{matrix.suffix}}-0 || exit 0
+        kubectl wait --for=delete svc/my-hazelcast${{matrix.suffix}}-0 --timeout=5m
 
   clean-up:
     name: Clean up GKE cluster

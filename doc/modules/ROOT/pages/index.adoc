@@ -54,7 +54,11 @@ spec:
 EOF
 ----
 
-This will create the Hazelcast cluster and one `LoadBalancer` service. You can also use `NodePort` service, for this change the `discoveryServiceType` to `NodePort`.
+For `discoveryServiceType` you can use:
+
+* `LoadBalancer` - will create an external `LoadBalancer` for discovery serivce;
+* `NodePort` - will expose the discovery service via `NodePort`.
+
 
 === Verifying Hazelcast cluster
 
@@ -256,8 +260,16 @@ EOF
 
 This will create the Hazelcast cluster and one `LoadBalancer` service for discovery and one `LoadBalancer` service for each pod.
 
-It is also possible to use `NodePort` type for `discoveryServiceType`. Operator will create the service of type `NodePort` for discovery.
-For `memberAccess` it is also possible to use `NodePortExternalIP` that allows the client to access Hazelcast member with the `NodePort` service and the node external IP/hostname, or `NodePortNodeName` that allows the client to access Hazelcast member with the `NodePort` service and the node name.
+For `discoveryServiceType` you can use:
+
+* `LoadBalancer` - will create an external `LoadBalancer` for discovery serivce;
+* `NodePort` - will expose the discovery service via `NodePort`.
+
+For `memberAccess` you can use the following options:
+
+* `LoadBalancer` - lets the client access Hazelcast member with the `LoadBalancer` service;
+* `NodePortNodeName` - lets the client access Hazelcast member with the `NodePort` service and the node name;
+* `NodePortExternalIP` - lets the client access Hazelcast member with the `NodePort` service and the node external IP/hostname.
 
 === Verifying Hazelcast cluster
 
