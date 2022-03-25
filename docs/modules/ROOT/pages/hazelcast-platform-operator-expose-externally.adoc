@@ -16,7 +16,7 @@
 
 * Up and running https://kubernetes.io/[Kubernetes] cluster
 * Kubernetes command-line tool, https://kubernetes.io/docs/tasks/tools/#kubectl[kubectl]
-* Deployed xref:hazelcast-platform-operator:ROOT:index.adoc[Hazelcast Platform Operator]
+* Deployed xref:operator:ROOT:index.adoc[Hazelcast Platform Operator]
 
 == Introduction
 
@@ -448,5 +448,5 @@ kubectl delete hazelcast my-hazelcast
 
 == See Also
 
-- xref:hazelcast-platform-operator.adoc[]
+- xref:operator:ROOT:index.adoc[]
 - xref:kubernetes-external-client.adoc[]
