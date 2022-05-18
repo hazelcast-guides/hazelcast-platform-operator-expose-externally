@@ -10,8 +10,8 @@ client = hazelcast.HazelcastClient(
     use_public_ip=True,
 )
 
-print("Successful connection!", flush=True)
-print("Starting to fill the map with random entries.", flush=True)
+print("Successful connection!")
+print("Starting to fill the map with random entries.")
 
 m = client.get_map("map").blocking()
 

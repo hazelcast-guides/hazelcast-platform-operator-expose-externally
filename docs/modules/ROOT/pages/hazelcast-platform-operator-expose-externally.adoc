@@ -134,6 +134,7 @@ func main() {
 	config := hazelcast.Config{}
 	cc := &config.Cluster
 	cc.Network.SetAddresses("<EXTERNAL-IP>")
+	cc.Discovery.UsePublicIP = true
 	cc.Unisocket = true
 	ctx := context.TODO()
 	client, err := hazelcast.StartNewClientWithConfig(ctx, config)
@@ -159,6 +160,25 @@ client = hazelcast.HazelcastClient(
     use_public_ip=True,
     smart_routing=False,
 )
+----
+--
+
+C++::
++
+--
+[source, cpp]
+----
+#include <hazelcast/client/hazelcast_client.h>
+
+int main(int argc, char **argv) {
+    hazelcast::client::client_config config;
+    config.get_network_config().use_public_address(true)
+                            .add_address(hazelcast::client::address{"<EXTERNAL-IP>", 5701})
+                            .set_smart_routing(false);
+    auto client = hazelcast::new_client(std::move(config)).get();
+
+    return 0;
+}
 ----
 --
 
@@ -209,6 +229,18 @@ Python::
 cd python-unisocket
 pip install -r requirements.txt
 python main.py
+----
+--
+
+C++::
++
+--
+[source, bash]
+----
+cd cpp-unisocket
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build build --verbose
+./build/cpp-unisocket
 ----
 --
 
@@ -342,6 +374,7 @@ func main() {
 	config := hazelcast.Config{}
 	cc := &config.Cluster
 	cc.Network.SetAddresses("<EXTERNAL-IP>")
+	cc.Discovery.UsePublicIP = true
 	ctx := context.TODO()
 	client, err := hazelcast.StartNewClientWithConfig(ctx, config)
 	if err != nil {
@@ -365,6 +398,24 @@ client = hazelcast.HazelcastClient(
     cluster_members=["<EXTERNAL-IP>"],
     use_public_ip=True,
 )
+----
+--
+
+C++::
++
+--
+[source, cpp]
+----
+#include <hazelcast/client/hazelcast_client.h>
+
+int main(int argc, char **argv) {
+    hazelcast::client::client_config config;
+    config.get_network_config().use_public_address(true)
+                            .add_address(hazelcast::client::address{"<EXTERNAL-IP>", 5701});
+    auto client = hazelcast::new_client(std::move(config)).get();
+
+    return 0;
+}
 ----
 --
 
@@ -415,6 +466,18 @@ Python::
 cd python
 pip install -r requirements.txt
 python main.py
+----
+--
+
+C++::
++
+--
+[source, bash]
+----
+cd cpp
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build build --verbose
+./build/cpp
 ----
 --
 

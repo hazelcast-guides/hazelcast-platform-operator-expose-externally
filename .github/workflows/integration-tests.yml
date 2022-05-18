@@ -209,12 +209,26 @@ jobs:
         cd python${{matrix.suffix}}
         sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.py
         pip install -r requirements.txt
-        python main.py >> output-python.txt &
+        python -u main.py >> output-python.txt &
         PID=$!
         sleep 30
         kill $PID
 
         cat output-python.txt | grep 'Successful connection!' -q
+
+    - name: Test Cpp Client
+      run: |-
+        EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
+        cd cpp${{matrix.suffix}}
+        sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.cpp
+        cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake
+        cmake --build build
+        build/cpp${{matrix.suffix}} >> output-cpp.txt &
+        PID=$!
+        sleep 30
+        kill $PID
+
+        cat output-cpp.txt | grep 'Successful connection!' -q
 
     - name: Clean up
       if: ${{ always() }}
