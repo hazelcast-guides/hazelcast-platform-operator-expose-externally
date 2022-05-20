@@ -54,7 +54,7 @@ jobs:
 
     - name: Deploy operator
       run: |-
-        kubectl apply -f https://repository.hazelcast.com/operator/bundle.yaml
+        kubectl apply -f https://repository.hazelcast.com/operator/bundle-latest.yaml
         kubectl wait --for=condition=available --timeout=10m deployment/hazelcast-platform-controller-manager
         kubectl create secret generic hazelcast-license-key --from-literal license-key=${{ secrets.LICENSE }}
 
