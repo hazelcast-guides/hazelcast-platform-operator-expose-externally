@@ -30,8 +30,7 @@ jobs:
     - name: Create GKE cluster
       id: cluster
       run: |-
-        REPO_NAME=$(echo $GITHUB_REPOSITORY | awk -F/ '{print $NF}')
-        CLUSTER_NAME="$REPO_NAME-$GITHUB_RUN_NUMBER"
+        CLUSTER_NAME="hpo-ex-ex-$GITHUB_RUN_NUMBER"
         echo "CLUSTER_NAME=$CLUSTER_NAME" >> $GITHUB_ENV
         echo "::set-output name=CLUSTER_NAME::${CLUSTER_NAME}"
 
