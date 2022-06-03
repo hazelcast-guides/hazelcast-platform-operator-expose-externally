@@ -5,39 +5,56 @@ on:
       - 'doc/**'
 
 env:
-  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+  GCP_PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GKE_ZONE: europe-west1-b
+  GCP_NETWORK: tutorial-test-network 
 
 jobs:
   create-gke-cluster:
     name: Create GKE cluster
     runs-on: ubuntu-latest
     outputs:
-      cluster_name: ${{ steps.cluster.outputs.cluster_name }}
+      CLUSTER_NAME: ${{ steps.cluster.outputs.CLUSTER_NAME }}
 
     steps:
-      # Setup gcloud CLI
-    - uses: google-github-actions/setup-gcloud@master
+    - name: Authenticate to GCP
+      uses: 'google-github-actions/auth@v0.7.0'
       with:
-        service_account_key: ${{ secrets.GKE_SA_KEY }}
-        project_id: ${{ env.PROJECT_ID }}
-        export_default_credentials: true 
+        credentials_json: ${{ secrets.GKE_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v0.6.0
+      with:
+        project_id: ${{ env.GCP_PROJECT_ID }}
+
+    - name: Create GKE cluster
+      id: cluster
+      run: |-
+        CLUSTER_NAME="hpo-ex-ex-$GITHUB_RUN_NUMBER"
+        echo "CLUSTER_NAME=$CLUSTER_NAME" >> $GITHUB_ENV
+        echo "::set-output name=CLUSTER_NAME::${CLUSTER_NAME}"
+
+        gcloud container clusters create $CLUSTER_NAME \
+          --zone=${{ env.GKE_ZONE }} \
+          --project=${{ env.GCP_PROJECT_ID }} \
+          --network=${{ env.GCP_NETWORK }} \
+          --machine-type=n1-standard-2 \
+          --num-nodes=2
+        sleep 30
+
+    - name: Connect to the GKE cluster
+      run: |
+        gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} \
+          --zone ${{ env.GKE_ZONE }} \
+          --project ${{ env.GCP_PROJECT_ID }}
 
     - name: Install Kubectl
       run: |-
         gcloud components install kubectl
 
-    - name: Create GKE cluster
-      id: cluster
-      run: |-
-        CLUSTER_NAME="operator-expose-externally-$GITHUB_RUN_NUMBER"
-        echo "::set-output name=cluster_name::${CLUSTER_NAME}"
-        gcloud container clusters create ${CLUSTER_NAME} --zone=${{ env.GKE_ZONE }} --project="${{ env.PROJECT_ID }}" --machine-type=n1-standard-2 --num-nodes=2 --network=${{ secrets.GKE_NETWORK }}
-        sleep 30
-
     - name: Deploy operator
       run: |-
-        kubectl apply -f https://repository.hazelcast.com/operator/bundle.yaml
+        kubectl apply -f https://repository.hazelcast.com/operator/bundle-latest.yaml
         kubectl wait --for=condition=available --timeout=10m deployment/hazelcast-platform-controller-manager
         kubectl create secret generic hazelcast-license-key --from-literal license-key=${{ secrets.LICENSE }}
 
@@ -46,6 +63,9 @@ jobs:
     name: Run Integration tests on GKE
     runs-on: ubuntu-latest
     needs: create-gke-cluster
+    env:
+        CLUSTER_NAME: ${{ needs.create-gke-cluster.outputs.CLUSTER_NAME }}
+
     strategy:
       max-parallel: 1
       fail-fast: false
@@ -86,19 +106,25 @@ jobs:
         python-version: 3.9
         cache: 'pip'
 
-    # Setup gcloud CLI
-    - uses: google-github-actions/setup-gcloud@master
+    - name: Authenticate to GCP
+      uses: 'google-github-actions/auth@v0.7.0'
       with:
-        service_account_key: ${{ secrets.GKE_SA_KEY }}
-        project_id: ${{ env.PROJECT_ID }}
-        export_default_credentials: true 
+        credentials_json: ${{ secrets.GKE_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v0.6.0
+      with:
+        project_id: ${{ env.GCP_PROJECT_ID }}
 
     - name: Install Kubectl
       run: |-
         gcloud components install kubectl
 
     - name: Connect to the GKE cluster
-      run: gcloud container clusters get-credentials ${{ needs.create-gke-cluster.outputs.cluster_name }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
+      run: |
+        gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} \
+          --zone ${{ env.GKE_ZONE }} \
+          --project ${{ env.GCP_PROJECT_ID }}
 
     - name: Deploy Hazelcast cluster
       run: |-
@@ -209,16 +235,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: [run-tests, create-gke-cluster]
     if: ${{ always() }}
+    env:
+      CLUSTER_NAME: ${{ needs.create-gke-cluster.outputs.CLUSTER_NAME }}
     steps:
-
-    # Setup gcloud CLI
-    - uses: google-github-actions/setup-gcloud@master
+    - name: Authenticate to GCP
+      uses: 'google-github-actions/auth@v0.7.0'
       with:
-        service_account_key: ${{ secrets.GKE_SA_KEY }}
-        project_id: ${{ env.PROJECT_ID }}
-        export_default_credentials: true 
+        credentials_json: ${{ secrets.GKE_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v0.6.0
+      with:
+        project_id: ${{ env.GCP_PROJECT_ID }}
 
     # Clean up
     - name: Delete cluster
       run: |-
-        gcloud container clusters delete "${{ needs.create-gke-cluster.outputs.cluster_name }}" --zone="$GKE_ZONE" --quiet
+        gcloud container clusters delete "$CLUSTER_NAME" --zone="$GKE_ZONE" --quiet
