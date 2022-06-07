@@ -1,23 +1,22 @@
-:github-address: https://github.com/hazelcast-guides/hazelcast-platform-operator-expose-externally
-:templates-url: templates:ROOT:page$/
-:hazelcast: Hazelcast IMDG
-:framework: Kubernetes Operator
-
 = Connect to Hazelcast from Outside Kubernetes
-
-This guide will explain how to use Expose Externally feature of Hazelcast Platform Operator to connect to Hazelcast clusters running on Kubernetes from outside.
-
-include::{templates-url}/link-to-repo.adoc[]
+:templates-url: templates:ROOT:page$/
+:page-layout: tutorial
+:page-product: operator
+:page-categories: Caching, Cloud Native
+:page-lang: go, java, node, python
+:page-est-time: 5-10 mins
+:framework: Kubernetes Operator
+:description: In this tutorial, you'll connect to a Hazelcast cluster running in Kubernetes from outside of the Kubernetes environment.
 
 == What You’ll Learn
 
-In this guide, you will learn how to enable and use Expose Externally feature of Hazelcast Platform Operator.
+{description}
 
-== Prerequisites
+== Before you Begin
 
 * Up and running https://kubernetes.io/[Kubernetes] cluster
 * Kubernetes command-line tool, https://kubernetes.io/docs/tasks/tools/#kubectl[kubectl]
-* Deployed xref:hazelcast-platform-operator:ROOT:index.adoc[Hazelcast Platform Operator]
+* Deployed xref:operator:ROOT:index.adoc[Hazelcast Platform Operator]
 
 == Introduction
 
@@ -36,7 +35,7 @@ The first option is to use the `Unisocket` type. This option will use the standa
 .Hazelcast Unisocket Client
 image::unisocket.jpg[Hazelcast Unisocket Client]
 
-=== Starting Hazelcast cluster
+=== Start the Hazelcast Cluster
 
 Run the following command to create the Hazelcast cluster with Expose Externally feature enabled using Unisocket type.
 
@@ -60,7 +59,7 @@ For `discoveryServiceType` you can use:
 * `NodePort` - will expose the discovery service via `NodePort`.
 
 
-=== Verifying Hazelcast cluster
+=== Verify the Hazelcast Cluster
 
 Check the cluster status by running the following command.
 
@@ -83,7 +82,7 @@ my-hazelcast   LoadBalancer   10.43.240.23   35.240.113.74   5701:30218/TCP   65
 
 The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
 
-=== Connecting with Hazelcast Client
+=== Connect Hazelcast Clients to the Cluster
 
 Configure the Hazelcast client with the external address and disable smart routing to use the unisocket connection.
 
@@ -239,7 +238,7 @@ The second option is to use the `Smart` type. With this option, each Hazelcast m
 .Hazelcast Smart Client
 image::smart.jpg[Hazelcast Smart Client]
 
-=== Starting Hazelcast cluster
+=== Start the Hazelcast Cluster
 
 Run the following command to create the Hazelcast cluster with Expose Externally feature enabled using Smart type.
 
@@ -271,7 +270,7 @@ For `memberAccess` you can use the following options:
 * `NodePortNodeName` - lets the client access Hazelcast member with the `NodePort` service and the node name;
 * `NodePortExternalIP` - lets the client access Hazelcast member with the `NodePort` service and the node external IP/hostname.
 
-=== Verifying Hazelcast cluster
+=== Verify the Hazelcast Cluster
 
 Check the cluster status by running the following command.
 
@@ -293,7 +292,7 @@ hz-hazelcast   LoadBalancer   10.108.141.178   10.96.184.178     5701:31434/TCP 
 
 The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
 
-=== Connecting with Hazelcast Client
+=== Connect Hazelcast Clients to the Cluster
 
 Configure the Hazelcast client to connect to the cluster external address.
 
@@ -449,5 +448,5 @@ kubectl delete hazelcast my-hazelcast
 
 == See Also
 
-- xref:hazelcast-platform-operator:ROOT:index.adoc[Connect External Hazelcast Client to Kubernetes]
-- xref:kubernetes-external-client:ROOT:index.adoc[Getting Started with Hazelcast Platform Operator]
+- xref:operator:ROOT:index.adoc[]
+- xref:kubernetes-external-client.adoc[]
