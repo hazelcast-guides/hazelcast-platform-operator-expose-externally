@@ -106,6 +106,22 @@ jobs:
         python-version: 3.9
         cache: 'pip'
 
+    - name: Install Boost and Ninja
+      run: |-
+        sudo apt-get install libboost-all-dev ninja-build
+
+    - name: Checkout to C++ client
+      uses: actions/checkout@v3
+      with:
+        repository: hazelcast/hazelcast-cpp-client
+        path: cpp-client
+
+    - name: Install C++ client
+      working-directory: cpp-client
+      run: |-
+        cmake -B build -G Ninja -S .
+        sudo cmake --build build --target install
+
     - name: Authenticate to GCP
       uses: 'google-github-actions/auth@v0.7.0'
       with:
@@ -221,9 +237,9 @@ jobs:
         EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
         cd cpp${{matrix.suffix}}
         sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.cpp
-        cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake
+        cmake -B build -S .
         cmake --build build
-        build/cpp${{matrix.suffix}} >> output-cpp.txt &
+        build/cpp${{matrix.suffix}} 2>&1 | tee output-cpp.txt &
         PID=$!
         sleep 30
         kill $PID
