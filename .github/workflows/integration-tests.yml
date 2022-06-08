@@ -106,6 +106,22 @@ jobs:
         python-version: 3.9
         cache: 'pip'
 
+    - name: Install Boost and Ninja
+      run: |-
+        sudo apt-get install libboost-all-dev ninja-build
+
+    - name: Checkout to C++ client
+      uses: actions/checkout@v3
+      with:
+        repository: hazelcast/hazelcast-cpp-client
+        path: cpp-client
+
+    - name: Install C++ client
+      working-directory: cpp-client
+      run: |-
+        cmake -B build -G Ninja -S .
+        sudo cmake --build build --target install
+
     - name: Authenticate to GCP
       uses: 'google-github-actions/auth@v0.7.0'
       with:
@@ -209,12 +225,26 @@ jobs:
         cd python${{matrix.suffix}}
         sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.py
         pip install -r requirements.txt
-        python main.py >> output-python.txt &
+        python -u main.py >> output-python.txt &
         PID=$!
         sleep 30
         kill $PID
 
         cat output-python.txt | grep 'Successful connection!' -q
+
+    - name: Test Cpp Client
+      run: |-
+        EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
+        cd cpp${{matrix.suffix}}
+        sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.cpp
+        cmake -B build -S .
+        cmake --build build
+        build/cpp${{matrix.suffix}} 2>&1 | tee output-cpp.txt &
+        PID=$!
+        sleep 30
+        kill $PID
+
+        cat output-cpp.txt | grep 'Successful connection!' -q
 
     - name: Clean up
       if: ${{ always() }}
