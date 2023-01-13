@@ -54,8 +54,7 @@ jobs:
 
     - name: Deploy operator
       run: |-
-        kubectl apply -f https://repository.hazelcast.com/operator/bundle-latest.yaml
-        kubectl wait --for=condition=available --timeout=10m deployment/hazelcast-platform-controller-manager
+        helm install operator hazelcast/hazelcast-platform-operator --set installCRDs=true
         kubectl create secret generic hazelcast-license-key --from-literal license-key=${{ secrets.LICENSE }}
 
 
@@ -129,7 +128,6 @@ jobs:
     - name: Deploy Hazelcast cluster
       run: |-
         kubectl apply -f hazelcast${{matrix.suffix}}.yaml
-        sleep 30
 
     - name: Wait for external IP to get assigned
       timeout-minutes: 5
