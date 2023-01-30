@@ -1,12 +1,8 @@
 apiVersion: hazelcast.com/v1alpha1
 kind: Hazelcast
 metadata:
-  name: my-hazelcast-unisocket
+  name: my-hazelcast
 spec:
-  clusterSize: 3
-  repository: 'docker.io/hazelcast/hazelcast-enterprise'
-  version: '5.2.1'
-  licenseKeySecret: hazelcast-license-key
   exposeExternally:
     type: Unisocket
     discoveryServiceType: LoadBalancer
