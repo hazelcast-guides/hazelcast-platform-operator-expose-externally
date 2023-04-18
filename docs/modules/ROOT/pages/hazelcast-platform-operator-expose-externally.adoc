@@ -55,7 +55,7 @@ EOF
 
 For `discoveryServiceType` you can use:
 
-* `LoadBalancer` - will create an external `LoadBalancer` for discovery serivce;
+* `LoadBalancer` - will create an external `LoadBalancer` for discovery service;
 * `NodePort` - will expose the discovery service via `NodePort`.
 
 
@@ -261,7 +261,7 @@ This will create the Hazelcast cluster and one `LoadBalancer` service for discov
 
 For `discoveryServiceType` you can use:
 
-* `LoadBalancer` - will create an external `LoadBalancer` for discovery serivce;
+* `LoadBalancer` - will create an external `LoadBalancer` for discovery service;
 * `NodePort` - will expose the discovery service via `NodePort`.
 
 For `memberAccess` you can use the following options:
