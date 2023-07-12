@@ -66,8 +66,8 @@ Check the cluster status by running the following command.
 [source, shell]
 ----
 $ kubectl get hazelcast my-hazelcast
-NAME        STATUS    MEMBERS
-hazelcast   Running   3/3
+NAME           STATUS    MEMBERS   EXTERNAL-ADDRESSES   WAN-ADDRESSES
+my-hazelcast   Running   3/3       34.136.18.51:5701    34.136.18.51:5710
 ----
 
 After verifying that the cluster is `Running` and all the members are ready (`3/3`), run the following command to find the discovery service address.
@@ -75,8 +75,8 @@ After verifying that the cluster is `Running` and all the members are ready (`3/
 [source, shell]
 ----
 $ kubectl get service my-hazelcast
-NAME           TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)          AGE
-my-hazelcast   LoadBalancer   10.43.240.23   35.240.113.74   5701:30218/TCP   65s
+NAME           TYPE           CLUSTER-IP     EXTERNAL-IP    PORT(S)                                                       AGE
+my-hazelcast   LoadBalancer   10.64.11.240   34.136.18.51   5701:30627/TCP,5702:30163/TCP,8081:31266/TCP,5710:32275/TCP   3m47s
 
 ----
 
@@ -277,8 +277,8 @@ Check the cluster status by running the following command.
 [source, shell]
 ----
 $ kubectl get hazelcast my-hazelcast
-NAME        STATUS    MEMBERS
-hazelcast   Running   3/3
+NAME           STATUS    MEMBERS   EXTERNAL-ADDRESSES                                                           WAN-ADDRESSES
+my-hazelcast   Running   3/3       34.136.18.51:5701,34.134.251.35:5701,34.28.159.250:5701,35.192.20.253:5701   34.136.18.51:5710
 ----
 
 After verifying that the cluster is `Running` and all the members are ready (`3/3`), run the following command to find the discovery service address.
@@ -286,8 +286,8 @@ After verifying that the cluster is `Running` and all the members are ready (`3/
 [source, shell]
 ----
 $ kubectl get service my-hazelcast
-NAME           TYPE           CLUSTER-IP       EXTERNAL-IP       PORT(S)          AGE
-hz-hazelcast   LoadBalancer   10.108.141.178   10.96.184.178     5701:31434/TCP   5m44s
+NAME           TYPE           CLUSTER-IP    EXTERNAL-IP    PORT(S)                                                       AGE
+my-hazelcast   LoadBalancer   10.64.5.171   34.136.18.51   5701:31128/TCP,5702:32396/TCP,8081:32538/TCP,5710:31871/TCP   2m49s
 ----
 
 The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
