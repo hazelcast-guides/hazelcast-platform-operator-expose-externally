@@ -82,7 +82,35 @@ my-hazelcast   LoadBalancer   10.64.11.240   34.136.18.51   5701:30627/TCP,5702:
 
 The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
 
-=== Connect Hazelcast Clients to the Cluster
+=== Connect the Cluster Using CLC (Option 1)
+
+Before using CLC, it should be installed in your system. Check the installation instructions for CLC: xref:clc:install-clc.adoc[]
+
+. Run the following command for adding the cluster config to the CLC.
++
+[source, bash]
+----
+clc config add hz-1 cluster.name=dev cluster.address=<EXTERNAL-IP>
+----
+
+. Run the following command to fill a map.
++
+[source, bash]
+----
+for i in {1..10};
+do
+   clc -c hz-1 map set --name map1 key-$i value-$i;
+done
+----
+
+. Run the following command to check the map size.
++
+[source, bash]
+----
+clc -c hz-1 map size --name map1
+----
+
+=== Connect the Cluster by the Clients (Option 2)
 
 Configure the Hazelcast client with the external address and disable smart routing to use the unisocket connection.
 
@@ -292,7 +320,35 @@ my-hazelcast   LoadBalancer   10.64.5.171   34.136.18.51   5701:31128/TCP,5702:3
 
 The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
 
-=== Connect Hazelcast Clients to the Cluster
+=== Connect the Cluster Using CLC (Option 1)
+
+Before using CLC, it should be installed in your system. Check the installation instructions for CLC: xref:clc:install-clc.adoc[]
+
+. Run the following command for adding the cluster config to the CLC.
++
+[source, bash]
+----
+clc config add hz-2 cluster.name=dev cluster.address=<EXTERNAL-IP>
+----
+
+. Run the following command to fill a map.
++
+[source, bash]
+----
+for i in {1..10};
+do
+   clc -c hz-2 map set --name map2 key-$i value-$i;
+done
+----
+
+. Run the following command to check the map size.
++
+[source, bash]
+----
+clc -c hz-2 map size --name map2
+----
+
+=== Connect the Cluster by the Clients (Option 2)
 
 Configure the Hazelcast client to connect to the cluster external address.
 
