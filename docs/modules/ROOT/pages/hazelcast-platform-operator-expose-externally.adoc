@@ -322,7 +322,7 @@ The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
 
 === Connect the Cluster Using CLC (Option 1)
 
-Before using CLC, it should be installed in your system. Check the installation instructions for CLC: xref:clc:install-clc.adoc[]
+Before using CLC, it should be installed in your system. Check the installation instructions for CLC: xref:clc:ROOT:install-clc.adoc[]
 
 . Run the following command for adding the cluster config to the CLC.
 +
