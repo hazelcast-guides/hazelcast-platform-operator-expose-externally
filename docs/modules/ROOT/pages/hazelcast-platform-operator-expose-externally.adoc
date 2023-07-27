@@ -82,40 +82,25 @@ my-hazelcast   LoadBalancer   10.64.11.240   34.136.18.51   5701:30627/TCP,5702:
 
 The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
 
-=== Connect the Cluster Using CLC (Option 1)
-
-Before using CLC, it should be installed in your system. Check the installation instructions for CLC: xref:clc:install-clc.adoc[]
-
-. Run the following command for adding the cluster config to the CLC.
-+
-[source, bash]
-----
-clc config add hz-1 cluster.name=dev cluster.address=<EXTERNAL-IP>
-----
-
-. Run the following command to fill a map.
-+
-[source, bash]
-----
-for i in {1..10};
-do
-   clc -c hz-1 map set --name map1 key-$i value-$i;
-done
-----
-
-. Run the following command to check the map size.
-+
-[source, bash]
-----
-clc -c hz-1 map size --name map1
-----
-
-=== Connect the Cluster by the Clients (Option 2)
+=== Connect Hazelcast Clients to the Cluster
 
 Configure the Hazelcast client with the external address and disable smart routing to use the unisocket connection.
 
 [tabs]
 ====
+
+CLC::
++
+--
+NOTE: Before using CLC, it should be installed in your system. Check the installation instructions for CLC: xref:clc:ROOT:install-clc.adoc[].
+
+Run the following command for adding the cluster config to the CLC.
+
+[source, bash]
+----
+clc config add hz cluster.name=dev cluster.address=<EXTERNAL-IP>
+----
+--
 
 Java::
 +
@@ -197,6 +182,27 @@ Now you can start the application.
 [tabs]
 ====
 
+CLC::
++
+--
+Run the following command to fill a map.
+
+[source, bash]
+----
+for i in {1..10};
+do
+   clc -c hz map set --name map1 key-$i value-$i;
+done
+----
+
+Run the following command to check the map size.
+
+[source, bash]
+----
+clc -c hz map size --name map1
+----
+--
+
 Java::
 +
 --
@@ -205,6 +211,19 @@ Java::
 cd java-unisocket
 mvn package 
 java -jar target/*jar-with-dependencies*.jar
+----
+
+You should see the following output.
+
+[source, shell]
+----
+Successful connection!
+Starting to fill the map with random entries.
+Current map size: 2
+Current map size: 3
+Current map size: 4
+....
+....
 ----
 --
 
@@ -217,6 +236,19 @@ cd nodejs-unisocket
 npm install
 npm start
 ----
+
+You should see the following output.
+
+[source, shell]
+----
+Successful connection!
+Starting to fill the map with random entries.
+Current map size: 2
+Current map size: 3
+Current map size: 4
+....
+....
+----
 --
 
 Go::
@@ -226,6 +258,19 @@ Go::
 ----
 cd go-unisocket
 go run main.go
+----
+
+You should see the following output.
+
+[source, shell]
+----
+Successful connection!
+Starting to fill the map with random entries.
+Current map size: 2
+Current map size: 3
+Current map size: 4
+....
+....
 ----
 --
 
@@ -238,9 +283,6 @@ cd python-unisocket
 pip install -r requirements.txt
 python main.py
 ----
---
-
-====
 
 You should see the following output.
 
@@ -251,13 +293,12 @@ Starting to fill the map with random entries.
 Current map size: 2
 Current map size: 3
 Current map size: 4
-Current map size: 5
-Current map size: 6
-Current map size: 7
-Current map size: 8
-Current map size: 9
-Current map size: 10
+....
+....
 ----
+--
+
+====
 
 == Smart Client
 
@@ -320,40 +361,25 @@ my-hazelcast   LoadBalancer   10.64.5.171   34.136.18.51   5701:31128/TCP,5702:3
 
 The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
 
-=== Connect the Cluster Using CLC (Option 1)
-
-Before using CLC, it should be installed in your system. Check the installation instructions for CLC: xref:clc:ROOT:install-clc.adoc[]
-
-. Run the following command for adding the cluster config to the CLC.
-+
-[source, bash]
-----
-clc config add hz-2 cluster.name=dev cluster.address=<EXTERNAL-IP>
-----
-
-. Run the following command to fill a map.
-+
-[source, bash]
-----
-for i in {1..10};
-do
-   clc -c hz-2 map set --name map2 key-$i value-$i;
-done
-----
-
-. Run the following command to check the map size.
-+
-[source, bash]
-----
-clc -c hz-2 map size --name map2
-----
-
-=== Connect the Cluster by the Clients (Option 2)
+=== Connect Hazelcast Clients to the Cluster
 
 Configure the Hazelcast client to connect to the cluster external address.
 
 [tabs]
 ====
+
+CLC::
++
+--
+NOTE: Before using CLC, it should be installed in your system. Check the installation instructions for CLC: xref:clc:ROOT:install-clc.adoc[].
+
+Run the following command for adding the cluster config to the CLC.
+
+[source, bash]
+----
+clc config add hz cluster.name=dev cluster.address=<EXTERNAL-IP>
+----
+--
 
 Java::
 +
@@ -432,6 +458,27 @@ Now you can start the application.
 [tabs]
 ====
 
+CLC::
++
+--
+Run the following command to fill a map.
+
+[source, bash]
+----
+for i in {1..10};
+do
+   clc -c hz map set --name map1 key-$i value-$i;
+done
+----
+
+Run the following command to check the map size.
+
+[source, bash]
+----
+clc -c hz map size --name map1
+----
+--
+
 Java::
 +
 --
@@ -440,6 +487,19 @@ Java::
 cd java
 mvn package 
 java -jar target/*jar-with-dependencies*.jar
+----
+
+You should see the following output.
+
+[source, shell]
+----
+Successful connection!
+Starting to fill the map with random entries.
+Current map size: 2
+Current map size: 3
+Current map size: 4
+....
+....
 ----
 --
 
@@ -452,6 +512,19 @@ cd nodejs
 npm install
 npm start
 ----
+
+You should see the following output.
+
+[source, shell]
+----
+Successful connection!
+Starting to fill the map with random entries.
+Current map size: 2
+Current map size: 3
+Current map size: 4
+....
+....
+----
 --
 
 Go::
@@ -461,6 +534,19 @@ Go::
 ----
 cd go
 go run main.go
+----
+
+You should see the following output.
+
+[source, shell]
+----
+Successful connection!
+Starting to fill the map with random entries.
+Current map size: 2
+Current map size: 3
+Current map size: 4
+....
+....
 ----
 --
 
@@ -473,9 +559,6 @@ cd python
 pip install -r requirements.txt
 python main.py
 ----
---
-
-====
 
 You should see the following output.
 
@@ -486,13 +569,12 @@ Starting to fill the map with random entries.
 Current map size: 2
 Current map size: 3
 Current map size: 4
-Current map size: 5
-Current map size: 6
-Current map size: 7
-Current map size: 8
-Current map size: 9
-Current map size: 10
+....
+....
 ----
+--
+
+====
 
 == Clean Up
 
