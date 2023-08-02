@@ -185,17 +185,17 @@ client = hazelcast.HazelcastClient(
 .NET::
 +
 --
-[source, csharp]
+[source, cs]
 ----
-        IHazelcastClient client;
-        Action<HazelcastOptions> configureOptions = options =>
-        {
-            options.Networking.SmartRouting = false;
-            options.Networking.Addresses.Add("<EXTERNAL-IP>");
-            options.Networking.ConnectionRetry.ClusterConnectionTimeoutMilliseconds = 1000;
-        };
+IHazelcastClient client;
+Action<HazelcastOptions> configureOptions = options =>
+{
+    options.Networking.SmartRouting = false;
+    options.Networking.Addresses.Add("<EXTERNAL-IP>");
+    options.Networking.ConnectionRetry.ClusterConnectionTimeoutMilliseconds = 1000;
+};
 
-        var options = new HazelcastOptionsBuilder().With(configureOptions).Build();
+var options = new HazelcastOptionsBuilder().With(configureOptions).Build();
 
 ====
 
@@ -506,7 +506,7 @@ client = hazelcast.HazelcastClient(
 .Net::
 +
 --
-[source, csharp]
+[source, cs]
 ----
 IHazelcastClient client;
 Action<HazelcastOptions> configureOptions = options =>
@@ -518,6 +518,7 @@ Action<HazelcastOptions> configureOptions = options =>
 
 var options = new HazelcastOptionsBuilder().With(configureOptions).Build();
 ====
+
 
 Now you can start the application.
 
