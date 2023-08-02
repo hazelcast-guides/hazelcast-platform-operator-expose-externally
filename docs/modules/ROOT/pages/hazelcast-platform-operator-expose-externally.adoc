@@ -511,7 +511,7 @@ client = hazelcast.HazelcastClient(
 IHazelcastClient client;
 Action<HazelcastOptions> configureOptions = options =>
 {
-    options.Networking.Addresses.Add("localhost:5701");
+    options.Networking.Addresses.Add("<EXTERNAL-IP>");
     options.Networking.ConnectionRetry.ClusterConnectionTimeoutMilliseconds = 1000;
     options.Networking.UsePublicAddresses = true;
 };
