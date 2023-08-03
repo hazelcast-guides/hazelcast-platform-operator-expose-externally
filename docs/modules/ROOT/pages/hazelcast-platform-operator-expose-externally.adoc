@@ -354,12 +354,7 @@ image::smart.jpg[Hazelcast Smart Client]
 
 === Start the Hazelcast Cluster
 
-To access all examples (excluding CLC), clone the following repository.
-[source,shell]
-----
-git clone https://github.com/hazelcast-guides/hazelcast-platform-operator-expose-externally.git
-cd hazelcast-platform-operator-expose-externally
-----
+
 
 
 Run the following command to create the Hazelcast cluster with Expose Externally feature enabled using Smart type.
