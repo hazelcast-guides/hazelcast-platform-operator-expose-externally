@@ -187,15 +187,16 @@ client = hazelcast.HazelcastClient(
 --
 [source, cs]
 ----
-IHazelcastClient client;
-Action<HazelcastOptions> configureOptions = options =>
-{
-    options.Networking.SmartRouting = false;
-    options.Networking.Addresses.Add("<EXTERNAL-IP>");
-    options.Networking.ConnectionRetry.ClusterConnectionTimeoutMilliseconds = 1000;
-};
-
-var options = new HazelcastOptionsBuilder().With(configureOptions).Build();
+var options = new HazelcastOptionsBuilder()
+    .With(args)
+    .With((configuration, options) =>
+    {
+        options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
+        options.Networking.Addresses.Add("<EXTERNAL IP>");
+        options.Networking.SmartRouting = false;
+    })
+    .Build();
+var client = await HazelcastClientFactory.StartNewClientAsync(options);
 
 ====
 
@@ -503,15 +504,16 @@ client = hazelcast.HazelcastClient(
 --
 [source, cs]
 ----
-IHazelcastClient client;
-Action<HazelcastOptions> configureOptions = options =>
-{
-    options.Networking.Addresses.Add("<EXTERNAL-IP>");
-    options.Networking.ConnectionRetry.ClusterConnectionTimeoutMilliseconds = 1000;
-    options.Networking.UsePublicAddresses = true;
-};
-
-var options = new HazelcastOptionsBuilder().With(configureOptions).Build();
+var options = new HazelcastOptionsBuilder()
+    .With(args)
+    .With((configuration, options) =>
+    {
+        options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
+        options.Networking.Addresses.Add("<EXTERNAL IP>");
+        options.Networking.UsePublicAddresses = true;
+    })
+    .Build();
+var client = await HazelcastClientFactory.StartNewClientAsync(options);
 ====
 
 

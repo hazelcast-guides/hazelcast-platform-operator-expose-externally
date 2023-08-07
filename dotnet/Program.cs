@@ -1,28 +1,20 @@
 ﻿using Hazelcast;
+using Microsoft.Extensions.Logging;
 
 class csharp_example
 {
     static async Task Main(string[] args)
     {
-        IHazelcastClient client;
-        Action<HazelcastOptions> configureOptions = options =>
-        {
-            options.Networking.Addresses.Add("<EXTERNAL-IP>");
-            options.Networking.ConnectionRetry.ClusterConnectionTimeoutMilliseconds = 1000;
-            options.Networking.UsePublicAddresses = true;
-        };
-
-        var options = new HazelcastOptionsBuilder().With(configureOptions).Build();
-        
-        try 
-        {
-            client = await HazelcastClientFactory.StartNewClientAsync(options);
-        }
-        catch (Exception e) 
-        {
-            Console.WriteLine("Failed to connect: " + e.Message);
-            return;
-        }
+        var options = new HazelcastOptionsBuilder()
+            .With(args)
+            .With((configuration, options) =>
+            {
+                options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
+                options.Networking.Addresses.Add("<EXTERNAL IP>");
+                options.Networking.UsePublicAddresses = true;
+            })
+            .Build();
+        var client = await HazelcastClientFactory.StartNewClientAsync(options);
 
 
         Console.WriteLine("Successful connection!");
