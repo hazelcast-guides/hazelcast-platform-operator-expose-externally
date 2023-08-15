@@ -24,7 +24,7 @@ class csharp_example
         var random = new Random();
         while (true)
         {
-            int randomKey = random.Next(100_000);
+            var randomKey = random.Next(100_000);
             await map.PutAsync("key-" + randomKey, "value-" + randomKey);
             Console.WriteLine("Current map size: " + await map.GetSizeAsync());
         }
