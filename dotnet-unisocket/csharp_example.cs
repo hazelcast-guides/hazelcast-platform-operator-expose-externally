@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 
 
-class csharp_example
+class CsharpExample
 {
     static async Task Main(string[] args)
     {
@@ -17,7 +17,6 @@ class csharp_example
             })
             .Build();
         var client = await HazelcastClientFactory.StartNewClientAsync(options);
-
 
 
         Console.WriteLine("Successful connection!");
