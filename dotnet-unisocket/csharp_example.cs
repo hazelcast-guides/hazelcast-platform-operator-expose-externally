@@ -24,7 +24,7 @@ class csharp_example
         Console.WriteLine("Starting to fill the map with random entries.");
 
         var map = await client.GetMapAsync<string, string>("map");
-        Random random = new Random();
+        var random = new Random();
         while (true)
         {
             int randomKey = random.Next(100_000);
