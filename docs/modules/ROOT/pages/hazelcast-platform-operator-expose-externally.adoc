@@ -84,6 +84,14 @@ The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
 
 === Connect Hazelcast Clients to the Cluster
 
+To access all examples (excluding CLC), clone the following repository.
+[source,shell]
+----
+git clone https://github.com/hazelcast-guides/hazelcast-platform-operator-expose-externally.git
+cd hazelcast-platform-operator-expose-externally
+----
+
+
 Configure the Hazelcast client with the external address and disable smart routing to use the unisocket connection.
 
 [tabs]
@@ -174,6 +182,21 @@ client = hazelcast.HazelcastClient(
 )
 ----
 --
+.NET::
++
+--
+[source, cs]
+----
+var options = new HazelcastOptionsBuilder()
+    .With(args)
+    .With((configuration, options) =>
+    {
+        options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
+        options.Networking.Addresses.Add("<EXTERNAL IP>");
+        options.Networking.SmartRouting = false;
+    })
+    .Build();
+var client = await HazelcastClientFactory.StartNewClientAsync(options);
 
 ====
 
@@ -297,6 +320,29 @@ Current map size: 4
 ....
 ----
 --
+.NET::
++
+--
+[source, bash]
+----
+cd dotnet-unisocket
+dotnet build
+dotnet run
+----
+
+You should see the following output.
+
+[source, shell]
+----
+Successful connection!
+Starting to fill the map with random entries.
+Current map size: 2
+Current map size: 3
+Current map size: 4
+....
+....
+----
+--
 
 ====
 
@@ -308,6 +354,9 @@ The second option is to use the `Smart` type. With this option, each Hazelcast m
 image::smart.jpg[Hazelcast Smart Client]
 
 === Start the Hazelcast Cluster
+
+
+
 
 Run the following command to create the Hazelcast cluster with Expose Externally feature enabled using Smart type.
 
@@ -450,8 +499,23 @@ client = hazelcast.HazelcastClient(
 )
 ----
 --
-
+.Net::
++
+--
+[source, cs]
+----
+var options = new HazelcastOptionsBuilder()
+    .With(args)
+    .With((configuration, options) =>
+    {
+        options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
+        options.Networking.Addresses.Add("<EXTERNAL IP>");
+        options.Networking.UsePublicAddresses = true;
+    })
+    .Build();
+var client = await HazelcastClientFactory.StartNewClientAsync(options);
 ====
+
 
 Now you can start the application.
 
@@ -558,6 +622,29 @@ Python::
 cd python
 pip install -r requirements.txt
 python main.py
+----
+
+You should see the following output.
+
+[source, shell]
+----
+Successful connection!
+Starting to fill the map with random entries.
+Current map size: 2
+Current map size: 3
+Current map size: 4
+....
+....
+----
+--
+.NET::
++
+--
+[source, bash]
+----
+cd dotnet
+dotnet build
+dotnet run
 ----
 
 You should see the following output.
