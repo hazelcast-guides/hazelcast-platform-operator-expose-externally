@@ -197,7 +197,8 @@ var options = new HazelcastOptionsBuilder()
     })
     .Build();
 var client = await HazelcastClientFactory.StartNewClientAsync(options);
-
+----
+--
 ====
 
 Now you can start the application.
@@ -514,6 +515,8 @@ var options = new HazelcastOptionsBuilder()
     })
     .Build();
 var client = await HazelcastClientFactory.StartNewClientAsync(options);
+----
+--
 ====
 
 
