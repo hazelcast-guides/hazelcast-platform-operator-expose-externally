@@ -66,21 +66,20 @@ Check the cluster status by running the following command.
 [source, shell]
 ----
 $ kubectl get hazelcast my-hazelcast
-NAME           STATUS    MEMBERS   EXTERNAL-ADDRESSES   WAN-ADDRESSES
-my-hazelcast   Running   3/3       34.136.18.51:5701    34.136.18.51:5710
+NAME           STATUS    MEMBERS
+my-hazelcast   Running   3/3
 ----
 
-After verifying that the cluster is `Running` and all the members are ready (`3/3`), run the following command to find the discovery service address.
+After verifying that the cluster is `Running` and all the members are ready (`3/3`), run the following command to find the discovery address.
 
 [source, shell]
 ----
-$ kubectl get service my-hazelcast
-NAME           TYPE           CLUSTER-IP     EXTERNAL-IP    PORT(S)                                                       AGE
-my-hazelcast   LoadBalancer   10.64.11.240   34.136.18.51   5701:30627/TCP,5702:30163/TCP,8081:31266/TCP,5710:32275/TCP   3m47s
-
+$ kubectl get hazelcastendpoint my-hazelcast
+NAME           TYPE        ADDRESS
+my-hazelcast   Discovery   34.41.70.32:5701
 ----
 
-The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
+The `ADDRESS` column displays the external address of your Hazelcast cluster.
 
 === Connect Hazelcast Clients to the Cluster
 
@@ -396,20 +395,23 @@ Check the cluster status by running the following command.
 [source, shell]
 ----
 $ kubectl get hazelcast my-hazelcast
-NAME           STATUS    MEMBERS   EXTERNAL-ADDRESSES                                                           WAN-ADDRESSES
-my-hazelcast   Running   3/3       34.136.18.51:5701,34.134.251.35:5701,34.28.159.250:5701,35.192.20.253:5701   34.136.18.51:5710
+NAME           STATUS    MEMBERS
+my-hazelcast   Running   3/3
 ----
 
-After verifying that the cluster is `Running` and all the members are ready (`3/3`), run the following command to find the discovery service address.
+After verifying that the cluster is `Running` and all the members are ready (`3/3`), run the following command to find the discovery and member addresses.
 
 [source, shell]
 ----
-$ kubectl get service my-hazelcast
-NAME           TYPE           CLUSTER-IP    EXTERNAL-IP    PORT(S)                                                       AGE
-my-hazelcast   LoadBalancer   10.64.5.171   34.136.18.51   5701:31128/TCP,5702:32396/TCP,8081:32538/TCP,5710:31871/TCP   2m49s
+$ kubectl get hazelcastendpoint --selector="app.kubernetes.io/instance=my-hazelcast"
+NAME             TYPE        ADDRESS
+my-hazelcast     Discovery   35.184.21.18:5701
+my-hazelcast-0   Member      35.194.44.37:5701
+my-hazelcast-1   Member      35.223.229.199:5701
+my-hazelcast-2   Member      34.122.242.55:5701
 ----
 
-The field `EXTERNAL-IP` is the address of your Hazelcast cluster.
+The `ADDRESS` column displays the external addresses of your Hazelcast cluster and members.
 
 === Connect Hazelcast Clients to the Cluster
 
