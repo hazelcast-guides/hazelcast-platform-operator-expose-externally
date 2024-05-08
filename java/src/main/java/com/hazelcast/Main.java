@@ -11,6 +11,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         ClientConfig config = new ClientConfig();
         config.getNetworkConfig().addAddress("<EXTERNAL-IP>");
+        config.getProperties().setProperty(ClientProperty.DISCOVERY_SPI_PUBLIC_IP_ENABLED.toString(), "true");
         HazelcastInstance client = HazelcastClient.newHazelcastClient(config);
 
         System.out.println("Successful connection!");

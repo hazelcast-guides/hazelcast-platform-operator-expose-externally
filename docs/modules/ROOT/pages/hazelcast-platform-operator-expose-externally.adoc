@@ -441,6 +441,7 @@ Java::
 ----
 ClientConfig config = new ClientConfig();
 config.getNetworkConfig().addAddress("<EXTERNAL-IP>");
+config.getProperties().setProperty(ClientProperty.DISCOVERY_SPI_PUBLIC_IP_ENABLED.toString(), "true");
 ----
 --
 
@@ -456,6 +457,9 @@ const clientConfig = {
         clusterMembers: [
             '<EXTERNAL-IP>'
         ]
+    },
+    properties: {
+        ['hazelcast.discovery.public.ip.enabled']: true
     }
 };
 const client = await Client.newHazelcastClient(clientConfig);
