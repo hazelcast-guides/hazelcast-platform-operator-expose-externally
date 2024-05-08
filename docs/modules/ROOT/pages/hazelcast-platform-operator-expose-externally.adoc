@@ -354,9 +354,6 @@ image::smart.jpg[Hazelcast Smart Client]
 
 === Start the Hazelcast Cluster
 
-
-
-
 Run the following command to create the Hazelcast cluster with Expose Externally feature enabled using Smart type.
 
 [source, shell]
