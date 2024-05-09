@@ -10,7 +10,7 @@ class csharp_example
             .With((configuration, options) =>
             {
                 options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
-                options.Networking.Addresses.Add("52.255.228.60");
+                options.Networking.Addresses.Add("<EXTERNAL-IP>");
                 options.Networking.UsePublicAddresses = true;
             })
             .Build();
