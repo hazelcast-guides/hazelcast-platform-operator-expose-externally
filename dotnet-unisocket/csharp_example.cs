@@ -12,7 +12,7 @@ class CsharpExample
             .With((configuration, options) =>
             {
                 options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
-                options.Networking.Addresses.Add("<EXTERNAL IP>");
+                options.Networking.Addresses.Add("<EXTERNAL-IP>");
                 options.Networking.SmartRouting = false;
             })
             .Build();

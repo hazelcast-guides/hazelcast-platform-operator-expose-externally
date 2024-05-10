@@ -176,7 +176,6 @@ logging.basicConfig(level=logging.INFO)
 
 client = hazelcast.HazelcastClient(
     cluster_members=["<EXTERNAL-IP>"],
-    use_public_ip=True,
     smart_routing=False,
 )
 ----
@@ -191,7 +190,7 @@ var options = new HazelcastOptionsBuilder()
     .With((configuration, options) =>
     {
         options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
-        options.Networking.Addresses.Add("<EXTERNAL IP>");
+        options.Networking.Addresses.Add("<EXTERNAL-IP>");
         options.Networking.SmartRouting = false;
     })
     .Build();
@@ -355,9 +354,6 @@ image::smart.jpg[Hazelcast Smart Client]
 
 === Start the Hazelcast Cluster
 
-
-
-
 Run the following command to create the Hazelcast cluster with Expose Externally feature enabled using Smart type.
 
 [source, shell]
@@ -441,6 +437,7 @@ Java::
 ----
 ClientConfig config = new ClientConfig();
 config.getNetworkConfig().addAddress("<EXTERNAL-IP>");
+config.getProperties().setProperty(ClientProperty.DISCOVERY_SPI_PUBLIC_IP_ENABLED.toString(), "true");
 ----
 --
 
@@ -456,6 +453,9 @@ const clientConfig = {
         clusterMembers: [
             '<EXTERNAL-IP>'
         ]
+    },
+    properties: {
+        ['hazelcast.discovery.public.ip.enabled']: true
     }
 };
 const client = await Client.newHazelcastClient(clientConfig);
@@ -513,8 +513,9 @@ var options = new HazelcastOptionsBuilder()
     .With((configuration, options) =>
     {
         options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
-        options.Networking.Addresses.Add("<EXTERNAL IP>");
+        options.Networking.Addresses.Add("<EXTERNAL-IP>");
         options.Networking.UsePublicAddresses = true;
+
     })
     .Build();
 var client = await HazelcastClientFactory.StartNewClientAsync(options);
