@@ -93,7 +93,7 @@ git clone https://github.com/hazelcast-guides/hazelcast-platform-operator-expose
 cd hazelcast-platform-operator-expose-externally
 ----
 
-. The sample code(excluding CLC) for this tutorial is in the link:{github-directory}/tree/master/docs/modules/ROOT/examples[`docs/modules/ROOT/examples/`] directory.
+. The sample code(excluding CLC) for this tutorial is in the link:https://github.com/hazelcast-guides/hazelcast-platform-operator-expose-externally/tree/master/docs/modules/ROOT/examples[`docs/modules/ROOT/examples/`] directory.
 
 Configure the Hazelcast client with the external address and disable smart routing to use the unisocket connection.
 
