@@ -44,14 +44,7 @@ Run the following command to create the Hazelcast cluster with Expose Externally
 [source, shell]
 ----
 cat <<EOF | kubectl apply -f -
-apiVersion: hazelcast.com/v1alpha1
-kind: Hazelcast
-metadata:
-  name: my-hazelcast
-spec:
-  exposeExternally:
-    type: Unisocket
-    discoveryServiceType: LoadBalancer
+include::ROOT:example$/hazelcast-unisocket.yaml[]
 EOF
 ----
 
@@ -318,15 +311,7 @@ Run the following command to create the Hazelcast cluster with Expose Externally
 [source, shell]
 ----
 cat <<EOF | kubectl apply -f -
-apiVersion: hazelcast.com/v1alpha1
-kind: Hazelcast
-metadata:
-  name: my-hazelcast
-spec:
-  exposeExternally:
-    type: Smart
-    discoveryServiceType: LoadBalancer
-    memberAccess: LoadBalancer
+include::ROOT:example$/hazelcast.yaml[]
 EOF
 ----
 
