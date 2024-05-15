@@ -43,7 +43,7 @@ Run the following command to create the Hazelcast cluster with Expose Externally
 
 [source, shell]
 ----
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - <<EOF
 include::ROOT:example$/operator-expose-externally/hazelcast-unisocket.yaml[]
 EOF
 ----
@@ -310,7 +310,7 @@ Run the following command to create the Hazelcast cluster with Expose Externally
 
 [source, shell]
 ----
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - <<EOF
 include::ROOT:example$/operator-expose-externally/hazelcast.yaml[]
 EOF
 ----
