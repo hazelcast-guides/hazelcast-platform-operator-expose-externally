@@ -127,7 +127,7 @@ jobs:
 
       - name: Deploy Hazelcast cluster
         run: |-
-          kubectl apply -f hazelcast${{matrix.suffix}}.yaml
+          kubectl apply -f $EXAMPLES_DIR/hazelcast${{matrix.suffix}}.yaml
 
       - name: Waith for Hazelcast cluster to be ready
         run: |-
