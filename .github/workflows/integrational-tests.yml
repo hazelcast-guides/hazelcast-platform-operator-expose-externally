@@ -8,7 +8,6 @@ env:
   GCP_PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GKE_ZONE: europe-west1-b
   GCP_NETWORK: tutorial-test-network
-  EXAMPLES_DIR: docs/modules/ROOT/examples
 
 jobs:
   create-gke-cluster:
@@ -80,10 +79,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up JDK
+      - name: Set up JDK 1.8
         uses: actions/setup-java@v2
         with:
-          java-version: 17
+          java-version: 8
           distribution: "adopt"
           cache: "maven"
 
@@ -164,7 +163,7 @@ jobs:
       - name: Test Java Client
         run: |-
           EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-          cd $EXAMPLES_DIR/java${{matrix.suffix}}
+          cd java${{matrix.suffix}}
           sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" src/main/java/com/hazelcast/Main.java
           mvn package
           java -jar target/*jar-with-dependencies*.jar >> output-java.txt &
@@ -177,7 +176,7 @@ jobs:
       - name: Test Node.js Client
         run: |-
           EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-          cd $EXAMPLES_DIR/nodejs${{matrix.suffix}}
+          cd nodejs${{matrix.suffix}}
           sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" client.js
           npm install
           npm start >> output-nodejs.txt &
@@ -190,7 +189,7 @@ jobs:
       - name: Test Go Client
         run: |-
           EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-          cd $EXAMPLES_DIR/go${{matrix.suffix}}
+          cd go${{matrix.suffix}}
           sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.go
           go run main.go >> output-go.txt &
           PID=$!
@@ -202,7 +201,7 @@ jobs:
       - name: Test Python Client
         run: |-
           EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-          cd $EXAMPLES_DIR/python${{matrix.suffix}}
+          cd python${{matrix.suffix}}
           sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.py
           pip install -r requirements.txt
           python main.py >> output-python.txt &
