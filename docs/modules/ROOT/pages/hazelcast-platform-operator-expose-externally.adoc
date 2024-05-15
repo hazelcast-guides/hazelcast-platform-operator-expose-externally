@@ -16,9 +16,7 @@
 
 * Up and running https://kubernetes.io/[Kubernetes] cluster
 * Kubernetes command-line tool, https://kubernetes.io/docs/tasks/tools/#kubectl[kubectl]
-* Deployed xref:operator:ROOT:get-started.adoc[Hazelcast Platform Operator]
-
-WARNING: This tutorial uses LoadBalancer services to connect to Hazelcast from outside of the Kubernetes cluster. Therefore, it is essential to ensure that your Kubernetes cluster can assign public IPs to LoadBalancer services. This is particularly important if you are using a local Kubernetes cluster such as Minikube or Kind.
+* Deployed xref:operator:ROOT:index.adoc[Hazelcast Platform Operator]
 
 == Introduction
 
@@ -43,8 +41,15 @@ Run the following command to create the Hazelcast cluster with Expose Externally
 
 [source, shell]
 ----
-kubectl apply -f - <<EOF
-include::ROOT:example$/hazelcast-unisocket.yaml[]
+cat <<EOF | kubectl apply -f -
+apiVersion: hazelcast.com/v1alpha1
+kind: Hazelcast
+metadata:
+  name: my-hazelcast
+spec:
+  exposeExternally:
+    type: Unisocket
+    discoveryServiceType: LoadBalancer
 EOF
 ----
 
@@ -78,15 +83,13 @@ The `ADDRESS` column displays the external address of your Hazelcast cluster.
 
 === Connect Hazelcast Clients to the Cluster
 
-To access all sample clients, clone the following repository:
-
+To access all examples (excluding CLC), clone the following repository.
 [source,shell]
 ----
 git clone https://github.com/hazelcast-guides/hazelcast-platform-operator-expose-externally.git
 cd hazelcast-platform-operator-expose-externally
 ----
 
-. The sample code(excluding CLC) for this tutorial is in the link:https://github.com/hazelcast-guides/hazelcast-platform-operator-expose-externally/tree/master/docs/modules/ROOT/examples[`docs/modules/ROOT/examples/`] directory.
 
 Configure the Hazelcast client with the external address and disable smart routing to use the unisocket connection.
 
@@ -111,7 +114,9 @@ Java::
 --
 [source, java]
 ----
-include::ROOT:example$/java-unisocket/src/main/java/com/hazelcast/Main.java[]
+ClientConfig config = new ClientConfig();
+config.getNetworkConfig().addAddress("<EXTERNAL-IP>")
+                         .setSmartRouting(false);
 ----
 --
 
@@ -120,7 +125,17 @@ NodeJS::
 --
 [source, javascript]
 ----
-include::ROOT:example$/nodejs-unisocket/client.js[]
+const { Client } = require('hazelcast-client');
+
+const clientConfig = {
+    network: {
+        clusterMembers: [
+            '<EXTERNAL-IP>'
+        ],
+        smartRouting: false
+    }
+};
+const client = await Client.newHazelcastClient(clientConfig);
 ----
 --
 
@@ -129,7 +144,23 @@ Go::
 --
 [source, go]
 ----
-include::ROOT:example$/go-unisocket/main.go[]
+import (
+	"log"
+
+	"github.com/hazelcast/hazelcast-go-client"
+)
+
+func main() {
+	config := hazelcast.Config{}
+	cc := &config.Cluster
+	cc.Network.SetAddresses("<EXTERNAL-IP>")
+	cc.Unisocket = true
+	ctx := context.TODO()
+	client, err := hazelcast.StartNewClientWithConfig(ctx, config)
+	if err != nil {
+		panic(err)
+	}
+}
 ----
 --
 
@@ -138,7 +169,15 @@ Python::
 --
 [source, python]
 ----
-include::ROOT:example$/python-unisocket/main.py[]
+import logging
+import hazelcast
+
+logging.basicConfig(level=logging.INFO)
+
+client = hazelcast.HazelcastClient(
+    cluster_members=["<EXTERNAL-IP>"],
+    smart_routing=False,
+)
 ----
 --
 .NET::
@@ -146,7 +185,16 @@ include::ROOT:example$/python-unisocket/main.py[]
 --
 [source, cs]
 ----
-include::ROOT:example$/dotnet-unisocket/csharp_example.cs[]
+var options = new HazelcastOptionsBuilder()
+    .With(args)
+    .With((configuration, options) =>
+    {
+        options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
+        options.Networking.Addresses.Add("<EXTERNAL-IP>");
+        options.Networking.SmartRouting = false;
+    })
+    .Build();
+var client = await HazelcastClientFactory.StartNewClientAsync(options);
 ----
 --
 ====
@@ -310,8 +358,16 @@ Run the following command to create the Hazelcast cluster with Expose Externally
 
 [source, shell]
 ----
-kubectl apply -f - <<EOF
-include::ROOT:example$/hazelcast.yaml[]
+cat <<EOF | kubectl apply -f -
+apiVersion: hazelcast.com/v1alpha1
+kind: Hazelcast
+metadata:
+  name: my-hazelcast
+spec:
+  exposeExternally:
+    type: Smart
+    discoveryServiceType: LoadBalancer
+    memberAccess: LoadBalancer
 EOF
 ----
 
@@ -379,7 +435,9 @@ Java::
 --
 [source, java]
 ----
-include::ROOT:example$/java/src/main/java/com/hazelcast/Main.java[]
+ClientConfig config = new ClientConfig();
+config.getNetworkConfig().addAddress("<EXTERNAL-IP>");
+config.getProperties().setProperty(ClientProperty.DISCOVERY_SPI_PUBLIC_IP_ENABLED.toString(), "true");
 ----
 --
 
@@ -388,7 +446,19 @@ NodeJS::
 --
 [source, javascript]
 ----
-include::ROOT:example$/nodejs/client.js[]
+const { Client } = require('hazelcast-client');
+
+const clientConfig = {
+    network: {
+        clusterMembers: [
+            '<EXTERNAL-IP>'
+        ]
+    },
+    properties: {
+        ['hazelcast.discovery.public.ip.enabled']: true
+    }
+};
+const client = await Client.newHazelcastClient(clientConfig);
 ----
 --
 
@@ -397,7 +467,23 @@ Go::
 --
 [source, go]
 ----
-include::ROOT:example$/go/main.go[]
+import (
+	"log"
+
+	"github.com/hazelcast/hazelcast-go-client"
+)
+
+func main() {
+	config := hazelcast.Config{}
+	cc := &config.Cluster
+	cc.Network.SetAddresses("<EXTERNAL-IP>")
+    cc.Discovery.UsePublicIP = true
+	ctx := context.TODO()
+	client, err := hazelcast.StartNewClientWithConfig(ctx, config)
+	if err != nil {
+		panic(err)
+	}
+}
 ----
 --
 
@@ -406,7 +492,15 @@ Python::
 --
 [source, python]
 ----
-include::ROOT:example$/python/main.py[]
+import logging
+import hazelcast
+
+logging.basicConfig(level=logging.INFO)
+
+client = hazelcast.HazelcastClient(
+    cluster_members=["<EXTERNAL-IP>"],
+    use_public_ip=True,
+)
 ----
 --
 .Net::
@@ -414,7 +508,17 @@ include::ROOT:example$/python/main.py[]
 --
 [source, cs]
 ----
-include::ROOT:example$/dotnet/csharp_example.cs[]
+var options = new HazelcastOptionsBuilder()
+    .With(args)
+    .With((configuration, options) =>
+    {
+        options.LoggerFactory.Creator = () => LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConfiguration(configuration.GetSection("logging")).AddConsole());
+        options.Networking.Addresses.Add("<EXTERNAL-IP>");
+        options.Networking.UsePublicAddresses = true;
+
+    })
+    .Build();
+var client = await HazelcastClientFactory.StartNewClientAsync(options);
 ----
 --
 ====
