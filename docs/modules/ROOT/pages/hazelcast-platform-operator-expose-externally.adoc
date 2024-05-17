@@ -414,7 +414,7 @@ include::ROOT:example$/operator-expose-externally/python/main.py[]
 --
 [source, cs]
 ----
-include::ROOT:example$/operator-expose-externally/dotnet/csharp_example.cs[]
+include::ROOT:example$/operator-expose-externally/dotnet-unisocket/csharp_example.cs[]
 ----
 --
 ====
