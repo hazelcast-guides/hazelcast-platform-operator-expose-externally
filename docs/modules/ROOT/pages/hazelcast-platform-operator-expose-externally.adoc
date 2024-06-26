@@ -17,6 +17,14 @@
 * Up and running https://kubernetes.io/[Kubernetes] cluster
 * Kubernetes command-line tool, https://kubernetes.io/docs/tasks/tools/#kubectl[kubectl]
 * Deployed xref:operator:ROOT:get-started.adoc[Hazelcast Platform Operator]
+* Create a license secret:
++
+Create a secret with your link:http://trialrequest.hazelcast.com/[Hazelcast Enterprise License].
++
+[source, shell]
+----
+kubectl create secret generic hazelcast-license-key --from-literal=license-key=<hz-license-key>
+----
 
 WARNING: This tutorial uses LoadBalancer services to connect to Hazelcast from outside of the Kubernetes cluster. Therefore, it is essential to ensure that your Kubernetes cluster can assign public IPs to LoadBalancer services. This is particularly important if you are using a local Kubernetes cluster such as Minikube or Kind.
 
