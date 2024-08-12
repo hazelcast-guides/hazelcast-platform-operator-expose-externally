@@ -1,7 +1,7 @@
 apiVersion: hazelcast.com/v1alpha1
 kind: Hazelcast
 metadata:
-  name: my-hazelcast
+  name: my-hazelcast-smart
 spec:
   licenseKeySecretName: hazelcast-license-key
   exposeExternally:
