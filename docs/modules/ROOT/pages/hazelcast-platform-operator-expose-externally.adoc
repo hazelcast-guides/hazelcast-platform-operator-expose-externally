@@ -71,7 +71,7 @@ Check the cluster status by running the following command.
 
 [source, shell]
 ----
-$ kubectl get hazelcast my-hazelcast
+$ kubectl get hazelcast my-hazelcast-unisocket
 NAME           STATUS    MEMBERS
 my-hazelcast   Running   3/3
 ----
@@ -80,9 +80,9 @@ After verifying that the cluster is `Running` and all the members are ready (`3/
 
 [source, shell]
 ----
-$ kubectl get hazelcastendpoint my-hazelcast
-NAME           TYPE        ADDRESS
-my-hazelcast   Discovery   34.41.70.32:5701
+$ kubectl get hazelcastendpoint my-hazelcast-unisocket
+NAME                     TYPE        ADDRESS
+my-hazelcast-unisocket   Discovery   34.135.7.75:5701
 ----
 
 The `ADDRESS` column displays the external address of your Hazelcast cluster.
@@ -94,7 +94,7 @@ To access all sample clients, clone the following repository:
 [source,shell]
 ----
 git clone https://github.com/hazelcast-guides/hazelcast-platform-operator-expose-externally.git
-cd hazelcast-platform-operator-expose-externally
+cd hazelcast-platform-operator-expose-externally/docs/modules/ROOT/examples/operator-expose-externally
 ----
 
 . The sample code(excluding CLC) for this tutorial is in the link:https://github.com/hazelcast-guides/hazelcast-platform-operator-expose-externally/tree/master/docs/modules/ROOT/examples/operator-expose-externally[`docs/modules/ROOT/examples/operator-expose-externally`] directory.
@@ -322,7 +322,7 @@ Run the following command to create the Hazelcast cluster with Expose Externally
 [source, shell]
 ----
 kubectl apply -f - <<EOF
-include::ROOT:example$/operator-expose-externally/hazelcast.yaml[]
+include::ROOT:example$/operator-expose-externally/hazelcast-smart.yaml[]
 EOF
 ----
 
@@ -345,7 +345,7 @@ Check the cluster status by running the following command.
 
 [source, shell]
 ----
-$ kubectl get hazelcast my-hazelcast
+$ kubectl get hazelcast my-hazelcast-smart
 NAME           STATUS    MEMBERS
 my-hazelcast   Running   3/3
 ----
@@ -354,7 +354,7 @@ After verifying that the cluster is `Running` and all the members are ready (`3/
 
 [source, shell]
 ----
-$ kubectl get hazelcastendpoint --selector="app.kubernetes.io/instance=my-hazelcast"
+$ kubectl get hazelcastendpoint --selector="app.kubernetes.io/instance=my-hazelcast-smart"
 NAME               TYPE        ADDRESS
 my-hazelcast       Discovery   35.184.21.18:5701
 my-hazelcast-0     Member      34.121.197.134:5701
@@ -579,11 +579,12 @@ Current map size: 4
 
 == Clean Up
 
-To clean up the created resources remove the Hazelcast Custom Resource.
+To clean up the created resources remove the Hazelcast Custom Resources.
 
 [source, shell]
 ----
-kubectl delete hazelcast my-hazelcast
+kubectl delete hazelcast my-hazelcast-unisocket
+kubectl delete hazelcast my-hazelcast-smart
 ----
 
 == See Also
