@@ -4,15 +4,18 @@ import java.util.Random;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.config.ClientNetworkConfig;
+import com.hazelcast.client.impl.connection.tcp.RoutingMode;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        ClientConfig config = new ClientConfig();
-        config.getNetworkConfig().addAddress("<EXTERNAL-IP>")
-                .setSmartRouting(false);
-        HazelcastInstance client = HazelcastClient.newHazelcastClient(config);
+        ClientConfig clientConfig = new ClientConfig();
+        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
+        networkConfig.addAddress("<EXTERNAL-IP>");
+        networkConfig.getClusterRoutingConfig().setRoutingMode(RoutingMode.SINGLE_MEMBER);
+        HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
 
         System.out.println("Successful connection!");
         System.out.println("Starting to fill the map with random entries.");
