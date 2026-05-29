@@ -20,6 +20,8 @@ jobs:
     name: Create GKE cluster
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      id-token: write
     outputs:
       CLUSTER_NAME: ${{ steps.cluster.outputs.CLUSTER_NAME }}
 
