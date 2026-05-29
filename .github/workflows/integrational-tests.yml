@@ -1,4 +1,5 @@
 name: Test on GKE
+
 on:
   push:
     paths-ignore:
@@ -6,62 +7,123 @@ on:
 
 env:
   GCP_PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_ZONE: europe-west1-b
-  GCP_NETWORK: tutorial-test-network
+  GKE_REGION: us-east1
+  GCP_NETWORK: operator-test-network
+  FIREWALL_RULE_NAME: node-port-range-ubi
   EXAMPLES_DIR: docs/modules/ROOT/examples/operator-expose-externally
+  HELM_RELEASE: operator
+  LICENSE_SECRET: hazelcast-license-key
+  AWS_REGION: us-east-1
 
 jobs:
   create-gke-cluster:
     name: Create GKE cluster
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     outputs:
       CLUSTER_NAME: ${{ steps.cluster.outputs.CLUSTER_NAME }}
 
     steps:
-      - name: Authenticate to GCP
-        uses: "google-github-actions/auth@v0.7.0"
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
         with:
-          credentials_json: ${{ secrets.GKE_SA_KEY }}
+          aws-access-key-id: ${{ secrets.CN_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CN_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get Secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@v3
+        with:
+          secret-ids: |
+            HZ_LICENSE_KEY,CN/HZ_LICENSE_KEY
+            GKE_SA_KEY,CN/GKE_SA_KEY
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ env.GKE_SA_KEY }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0.6.0
+        uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
+          install_components: gke-gcloud-auth-plugin
 
       - name: Create GKE cluster
         id: cluster
-        run: |-
-          CLUSTER_NAME="hpo-ex-ex-$GITHUB_RUN_NUMBER"
-          echo "CLUSTER_NAME=$CLUSTER_NAME" >> $GITHUB_ENV
-          echo "::set-output name=CLUSTER_NAME::${CLUSTER_NAME}"
-
-          gcloud container clusters create $CLUSTER_NAME \
-            --zone=${{ env.GKE_ZONE }} \
-            --project=${{ env.GCP_PROJECT_ID }} \
-            --network=${{ env.GCP_NETWORK }} \
+        run: |
+          set -euo pipefail
+          CLUSTER_NAME="hpo-ex-ex-${GITHUB_RUN_NUMBER}"
+          echo "CLUSTER_NAME=${CLUSTER_NAME}" >> "${GITHUB_ENV}"
+          echo "CLUSTER_NAME=${CLUSTER_NAME}" >> "${GITHUB_OUTPUT}"
+          gcloud container clusters create "${CLUSTER_NAME}" \
+            --region="${GKE_REGION}" \
+            --project="${GCP_PROJECT_ID}" \
+            --network="${GCP_NETWORK}" \
             --machine-type=n1-standard-2 \
-            --num-nodes=2
+            --num-nodes=3
           sleep 30
 
-      - name: Connect to the GKE cluster
+      - name: Create firewall rule if not existing
         run: |
-          gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} \
-            --zone ${{ env.GKE_ZONE }} \
-            --project ${{ env.GCP_PROJECT_ID }}
+          set -euo pipefail
+          existing_rule=$(
+            gcloud compute firewall-rules list \
+              --filter="name=${FIREWALL_RULE_NAME}" \
+              --project="${GCP_PROJECT_ID}" \
+              --format="value(name)"
+          )
+          if [ -z "${existing_rule}" ]; then
+            gcloud compute firewall-rules create "${FIREWALL_RULE_NAME}" \
+              --allow=tcp:30000-32767 \
+              --source-ranges=5.9.0.0/16 \
+              --network="${GCP_NETWORK}" \
+              --project="${GCP_PROJECT_ID}"
+          fi
 
-      - name: Install Kubectl
-        run: |-
-          gcloud components install kubectl
+      - name: Update firewall rule for GitHub Actions runners
+        run: |
+          gcloud compute firewall-rules update "${FIREWALL_RULE_NAME}" \
+            --source-ranges=0.0.0.0/0 \
+            --project="${GCP_PROJECT_ID}"
 
-      - name: Deploy operator
-        run: |-
-          helm repo add hazelcast https://hazelcast-charts.s3.amazonaws.com/
+      - name: Connect to the GKE cluster
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ steps.cluster.outputs.CLUSTER_NAME }}
+          location: ${{ env.GKE_REGION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy Hazelcast Platform Operator
+        run: |
+          set -euo pipefail
+          STABLE_VERSION=$(
+            curl -fsSL https://artifacthub.io/api/v1/packages/helm/hazelcast/hazelcast-platform-operator \
+              | jq -r '.available_versions | map(select(.version | contains("snapshot") | not)) | .[0].version'
+          )
+          helm repo add hazelcast https://hazelcast-charts.s3.amazonaws.com
           helm repo update
-          helm install operator hazelcast/hazelcast-platform-operator --set installCRDs=true,phoneHomeEnabled=false
+          helm install "${HELM_RELEASE}" hazelcast/hazelcast-platform-operator \
+            --version="${STABLE_VERSION}" \
+            --set installCRDs=true \
+            --set phoneHomeEnabled=false \
+            --wait
+          kubectl rollout status "deployment.apps/${HELM_RELEASE}-hazelcast-platform-operator" --timeout=300s
+          kubectl wait pods -l app.kubernetes.io/name=hazelcast-platform-operator \
+            --for=condition=Ready --timeout=300s
+
+      - name: Create license secret
+        run: |
+          kubectl create secret generic "${LICENSE_SECRET}" \
+            --from-literal=license-key="${{ env.HZ_LICENSE_KEY }}"
 
   run-tests:
     name: Run Integration tests on GKE
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: create-gke-cluster
     env:
       CLUSTER_NAME: ${{ needs.create-gke-cluster.outputs.CLUSTER_NAME }}
@@ -72,179 +134,236 @@ jobs:
       matrix:
         include:
           - type: smart
-            suffix: ""
+            manifest: hazelcast-smart.yaml
+            hz_name: my-hazelcast-smart
+            example_suffix: ""
           - type: unisocket
-            suffix: "-unisocket"
+            manifest: hazelcast-unisocket.yaml
+            hz_name: my-hazelcast-unisocket
+            example_suffix: "-unisocket"
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Set up JDK
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v5
         with:
-          java-version: 17
-          distribution: "adopt"
-          cache: "maven"
+          java-version: "17"
+          distribution: temurin
+          cache: maven
 
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v6
         with:
-          node-version: "14"
-          cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ env.EXAMPLES_DIR }}/nodejs${{ matrix.example_suffix }}/package-lock.json
 
-      - name: Set up Golang
-        uses: actions/setup-go@v2
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
-          go-version: "^1.17.2"
+          go-version-file: ${{ env.EXAMPLES_DIR }}/go${{ matrix.example_suffix }}/go.mod
+          cache: true
+          cache-dependency-path: ${{ env.EXAMPLES_DIR }}/go${{ matrix.example_suffix }}/go.sum
 
-      - name: Setup Python
-        uses: actions/setup-python@v2
+      - name: Set up Python
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.9
-          cache: "pip"
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: ${{ env.EXAMPLES_DIR }}/python${{ matrix.example_suffix }}/requirements.txt
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.CN_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CN_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get Secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@v3
+        with:
+          secret-ids: |
+            GKE_SA_KEY,CN/GKE_SA_KEY
 
       - name: Authenticate to GCP
-        uses: "google-github-actions/auth@v0.7.0"
+        uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GKE_SA_KEY }}
+          credentials_json: ${{ env.GKE_SA_KEY }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0.6.0
+        uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
-
-      - name: Install Kubectl
-        run: |-
-          gcloud components install kubectl
+          install_components: gke-gcloud-auth-plugin
 
       - name: Connect to the GKE cluster
-        run: |
-          gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} \
-            --zone ${{ env.GKE_ZONE }} \
-            --project ${{ env.GCP_PROJECT_ID }}
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.CLUSTER_NAME }}
+          location: ${{ env.GKE_REGION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
 
       - name: Deploy Hazelcast cluster
-        run: |-
-          kubectl apply -f $EXAMPLES_DIR/hazelcast${{matrix.suffix}}.yaml
+        run: |
+          kubectl apply -f "${EXAMPLES_DIR}/${{ matrix.manifest }}"
 
-      - name: Waith for Hazelcast cluster to be ready
-        run: |-
-          kubectl wait --for='jsonpath={.status.phase}=Running' hazelcast/my-hazelcast${{matrix.suffix}} --timeout 300s
+      - name: Wait for Hazelcast cluster to be ready
+        run: |
+          kubectl wait --for=jsonpath='{.status.phase}'=Running \
+            "hazelcast/${{ matrix.hz_name }}" --timeout=300s
 
       - name: Wait for external IP to get assigned
-        timeout-minutes: 5
-        run: |-
-          serviceType=$(kubectl get svc my-hazelcast${{matrix.suffix}} --output="jsonpath={.spec.type}")
-          if [ "$serviceType" != "LoadBalancer" ]; then
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          serviceType=$(
+            kubectl get "svc/${{ matrix.hz_name }}" -o jsonpath='{.spec.type}'
+          )
+          if [ "${serviceType}" != "LoadBalancer" ]; then
+            echo "Expected LoadBalancer service, got ${serviceType}"
+            kubectl get "svc/${{ matrix.hz_name }}" -o yaml
             exit 1
           fi
-          EXTERNAL_IP=$(kubectl get svc my-hazelcast${{matrix.suffix}} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
-          while [ "$EXTERNAL_IP" == "" ]; do
+          EXTERNAL_IP=""
+          for _ in $(seq 1 30); do
+            EXTERNAL_IP=$(
+              kubectl get "svc/${{ matrix.hz_name }}" \
+                -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+            )
+            if [ -n "${EXTERNAL_IP}" ]; then
+              echo "EXTERNAL_IP=${EXTERNAL_IP}" >> "${GITHUB_ENV}"
+              exit 0
+            fi
             sleep 10
-            EXTERNAL_IP=$(kubectl get svc my-hazelcast${{matrix.suffix}} --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
           done
-
-          echo "EXTERNAL_IP=${EXTERNAL_IP}" >> $GITHUB_ENV
+          echo "Timed out waiting for external IP on svc/${{ matrix.hz_name }}"
+          kubectl get "svc/${{ matrix.hz_name }}" -o yaml
+          exit 1
 
       - name: Wait for Smart type member IPs to get assigned
         if: matrix.type == 'smart'
-        timeout-minutes: 5
-        run: |-
-          for i in {0..2}; do
-            SVC_NAME="my-hazelcast${{matrix.suffix}}-${i}"
-            SVC_EXTERNAL_IP=$(kubectl get svc "${SVC_NAME}" --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
-            while [ "$SVC_EXTERNAL_IP" == "" ]; do
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          for i in 0 1 2; do
+            SVC_NAME="${{ matrix.hz_name }}-${i}"
+            SVC_EXTERNAL_IP=""
+            for _ in $(seq 1 30); do
+              SVC_EXTERNAL_IP=$(
+                kubectl get "svc/${SVC_NAME}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+              )
+              if [ -n "${SVC_EXTERNAL_IP}" ]; then
+                break
+              fi
               sleep 10
-              SVC_EXTERNAL_IP=$(kubectl get svc "${SVC_NAME}" --output="jsonpath={.status.loadBalancer.ingress[0].ip}")
             done
+            if [ -z "${SVC_EXTERNAL_IP}" ]; then
+              echo "Timed out waiting for external IP on svc/${SVC_NAME}"
+              kubectl get "svc/${SVC_NAME}" -o yaml
+              exit 1
+            fi
           done
 
       - name: Test Java Client
-        run: |-
-          EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-          cd $EXAMPLES_DIR/java${{matrix.suffix}}
-          sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" src/main/java/com/hazelcast/Main.java
-          mvn package
-          java -jar target/*jar-with-dependencies*.jar >> output-java.txt &
+        run: |
+          set -euo pipefail
+          cd "${EXAMPLES_DIR}/java${{ matrix.example_suffix }}"
+          sed -i "s/<EXTERNAL-IP>/${EXTERNAL_IP}/g" src/main/java/com/hazelcast/Main.java
+          mvn -q package
+          java -jar target/*jar-with-dependencies*.jar > output-java.txt 2>&1 &
           PID=$!
           sleep 30
-          kill $PID
-
-          cat output-java.txt | grep 'Successful connection!' -q
+          kill "${PID}" || true
+          grep -q 'Successful connection!' output-java.txt
 
       - name: Test Node.js Client
-        run: |-
-          EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-          cd $EXAMPLES_DIR/nodejs${{matrix.suffix}}
-          sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" client.js
-          npm install
-          npm start >> output-nodejs.txt &
+        run: |
+          set -euo pipefail
+          cd "${EXAMPLES_DIR}/nodejs${{ matrix.example_suffix }}"
+          sed -i "s/<EXTERNAL-IP>/${EXTERNAL_IP}/g" client.js
+          npm ci
+          npm start > output-nodejs.txt 2>&1 &
           PID=$!
           sleep 30
-          kill $PID
-
-          cat output-nodejs.txt | grep 'Successful connection!' -q
+          kill "${PID}" || true
+          grep -q 'Successful connection!' output-nodejs.txt
 
       - name: Test Go Client
-        run: |-
-          EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-          cd $EXAMPLES_DIR/go${{matrix.suffix}}
-          sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.go
-          go run main.go >> output-go.txt &
+        run: |
+          set -euo pipefail
+          cd "${EXAMPLES_DIR}/go${{ matrix.example_suffix }}"
+          sed -i "s/<EXTERNAL-IP>/${EXTERNAL_IP}/g" main.go
+          go run . > output-go.txt 2>&1 &
           PID=$!
           sleep 30
-          kill $PID
-
-          cat output-go.txt | grep 'Successful connection!' -q
+          kill "${PID}" || true
+          grep -q 'Successful connection!' output-go.txt
 
       - name: Test Python Client
-        run: |-
-          EXTERNAL_IP="${{ env.EXTERNAL_IP }}"
-          cd $EXAMPLES_DIR/python${{matrix.suffix}}
-          sed -i "s/<EXTERNAL-IP>/$EXTERNAL_IP/g" main.py
+        run: |
+          set -euo pipefail
+          cd "${EXAMPLES_DIR}/python${{ matrix.example_suffix }}"
+          sed -i "s/<EXTERNAL-IP>/${EXTERNAL_IP}/g" main.py
           pip install -r requirements.txt
-          python main.py >> output-python.txt &
+          python main.py > output-python.txt 2>&1 &
           PID=$!
           sleep 30
-          kill $PID
+          kill "${PID}" || true
+          grep -q 'Successful connection!' output-python.txt
 
-          cat output-python.txt | grep 'Successful connection!' -q
+      - name: Clean up Hazelcast cluster
+        if: always()
+        run: |
+          kubectl delete hazelcast "${{ matrix.hz_name }}" --ignore-not-found
+          kubectl wait --for=delete "pod/${{ matrix.hz_name }}-0" --timeout=2m || true
+          kubectl delete "svc/${{ matrix.hz_name }}" --ignore-not-found
+          kubectl wait --for=delete "svc/${{ matrix.hz_name }}" --timeout=5m || true
 
-      - name: Clean up
-        if: ${{ always() }}
-        run: |-
-          kubectl delete hazelcast my-hazelcast${{matrix.suffix}}
-          kubectl wait --for=delete pod/my-hazelcast${{matrix.suffix}}-0 --timeout=2m
-          kubectl get svc my-hazelcast${{matrix.suffix}} || exit 0
-          kubectl wait --for=delete svc/my-hazelcast${{matrix.suffix}} --timeout=5m
-
-      - name: Clean up Smart services
-        if: ${{ always() && matrix.type == 'smart' }}
-        run: |-
-          kubectl get svc my-hazelcast${{matrix.suffix}}-0 || exit 0
-          kubectl wait --for=delete svc/my-hazelcast${{matrix.suffix}}-0 --timeout=5m
+      - name: Clean up Smart member services
+        if: always() && matrix.type == 'smart'
+        run: |
+          kubectl delete "svc/${{ matrix.hz_name }}-0" --ignore-not-found
+          kubectl wait --for=delete "svc/${{ matrix.hz_name }}-0" --timeout=5m || true
 
   clean-up:
     name: Clean up GKE cluster
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [run-tests, create-gke-cluster]
-    if: ${{ always() }}
+    if: always()
     env:
       CLUSTER_NAME: ${{ needs.create-gke-cluster.outputs.CLUSTER_NAME }}
+
     steps:
-      - name: Authenticate to GCP
-        uses: "google-github-actions/auth@v0.7.0"
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
         with:
-          credentials_json: ${{ secrets.GKE_SA_KEY }}
+          aws-access-key-id: ${{ secrets.CN_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CN_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get Secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@v3
+        with:
+          secret-ids: |
+            GKE_SA_KEY,CN/GKE_SA_KEY
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ env.GKE_SA_KEY }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0.6.0
+        uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
+          install_components: gke-gcloud-auth-plugin
 
-      # Clean up
       - name: Delete cluster
-        run: |-
-          gcloud container clusters delete "$CLUSTER_NAME" --zone="$GKE_ZONE" --quiet
+        run: |
+          gcloud container clusters delete "${CLUSTER_NAME}" \
+            --region="${GKE_REGION}" \
+            --project="${GCP_PROJECT_ID}" \
+            --quiet
