@@ -2,7 +2,7 @@ module github.com/hazelcast-guides/kubernetes/go
 
 go 1.23
 
-require github.com/hazelcast/hazelcast-go-client v1.4.2
+require github.com/hazelcast/hazelcast-go-client v1.6.0
 
 require (
 	github.com/StackExchange/wmi v1.2.1 // indirect
