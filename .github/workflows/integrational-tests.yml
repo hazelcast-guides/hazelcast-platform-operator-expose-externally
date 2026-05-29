@@ -39,6 +39,8 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      id-token: write
     outputs:
       CLUSTER_NAME: ${{ steps.cluster.outputs.CLUSTER_NAME }}
 
@@ -114,7 +116,7 @@ jobs:
           project_id: ${{ env.GCP_PROJECT_ID }}
 
       - name: Install Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
 
       - name: Deploy Hazelcast Platform Operator
         run: |
