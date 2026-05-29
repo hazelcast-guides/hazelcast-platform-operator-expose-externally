@@ -1,0 +1,56 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /docs/modules/ROOT/examples/operator-expose-externally/go
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+  - package-ecosystem: gomod
+    directory: /docs/modules/ROOT/examples/operator-expose-externally/go-unisocket
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+  - package-ecosystem: maven
+    directory: /docs/modules/ROOT/examples/operator-expose-externally/java
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+  - package-ecosystem: maven
+    directory: /docs/modules/ROOT/examples/operator-expose-externally/java-unisocket
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+  - package-ecosystem: npm
+    directory: /docs/modules/ROOT/examples/operator-expose-externally/nodejs
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+  - package-ecosystem: npm
+    directory: /docs/modules/ROOT/examples/operator-expose-externally/nodejs-unisocket
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+  - package-ecosystem: pip
+    directory: /docs/modules/ROOT/examples/operator-expose-externally/python
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+  - package-ecosystem: pip
+    directory: /docs/modules/ROOT/examples/operator-expose-externally/python-unisocket
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
