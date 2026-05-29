@@ -109,7 +109,7 @@ jobs:
             --project="${GCP_PROJECT_ID}"
 
       - name: Connect to the GKE cluster
-        uses: google-github-actions/get-gke-credentials@v2
+        uses: google-github-actions/get-gke-credentials@v3
         with:
           cluster_name: ${{ steps.cluster.outputs.CLUSTER_NAME }}
           location: ${{ env.GKE_REGION }}
@@ -223,7 +223,7 @@ jobs:
           install_components: gke-gcloud-auth-plugin
 
       - name: Connect to the GKE cluster
-        uses: google-github-actions/get-gke-credentials@v2
+        uses: google-github-actions/get-gke-credentials@v3
         with:
           cluster_name: ${{ env.CLUSTER_NAME }}
           location: ${{ env.GKE_REGION }}
