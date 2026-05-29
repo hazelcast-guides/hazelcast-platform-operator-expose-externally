@@ -2,8 +2,27 @@ name: Test on GKE
 
 on:
   push:
+    branches:
+      - main
     paths-ignore:
       - "docs/**"
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "docs/**"
+  pull_request_target:
+    branches:
+      - main
+    paths-ignore:
+      - "docs/**"
+
+concurrency:
+  group: gke-integration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 env:
   GCP_PROJECT_ID: ${{ secrets.GKE_PROJECT }}
@@ -18,10 +37,20 @@ env:
 jobs:
   create-gke-cluster:
     name: Create GKE cluster
+    if: |
+      github.event_name == 'push' ||
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.user.login != 'dependabot[bot]' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      ) ||
+      (
+        github.event_name == 'pull_request_target' &&
+        github.event.pull_request.user.login == 'dependabot[bot]' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    permissions:
-      id-token: write
     outputs:
       CLUSTER_NAME: ${{ steps.cluster.outputs.CLUSTER_NAME }}
 
@@ -124,6 +153,18 @@ jobs:
 
   run-tests:
     name: Run Integration tests on GKE
+    if: |
+      github.event_name == 'push' ||
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.user.login != 'dependabot[bot]' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      ) ||
+      (
+        github.event_name == 'pull_request_target' &&
+        github.event.pull_request.user.login == 'dependabot[bot]' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 60
     needs: create-gke-cluster
@@ -147,6 +188,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up JDK
         uses: actions/setup-java@v5
@@ -334,7 +377,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [run-tests, create-gke-cluster]
-    if: always()
+    if: always() && needs.create-gke-cluster.result != 'skipped' && needs.create-gke-cluster.result != 'cancelled'
     env:
       CLUSTER_NAME: ${{ needs.create-gke-cluster.outputs.CLUSTER_NAME }}
 
