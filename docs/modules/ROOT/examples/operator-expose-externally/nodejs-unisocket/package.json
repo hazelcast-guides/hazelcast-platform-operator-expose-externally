@@ -8,6 +8,6 @@
   },
   "author": "",
   "dependencies": {
-    "hazelcast-client": "^5.0"
+    "hazelcast-client": "^5.6"
   }
 }
