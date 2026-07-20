@@ -185,7 +185,7 @@ jobs:
           cache-dependency-path: ${{ env.EXAMPLES_DIR }}/nodejs${{ matrix.example_suffix }}/package-lock.json
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: ${{ env.EXAMPLES_DIR }}/go${{ matrix.example_suffix }}/go.mod
           cache: true
